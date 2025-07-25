@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from 'expo-av';
 import * as DocumentPicker from 'expo-document-picker';
@@ -6,6 +6,7 @@ import * as Speech from 'expo-speech';
 import Papa from 'papaparse';
 import React, { useEffect, useState } from 'react';
 import { Alert, Button, FlatList, Modal, PanResponder, SafeAreaView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import ActionSheet, { SheetManager } from 'react-native-actions-sheet';
 
 import type { DocumentPickerAsset } from 'expo-document-picker';
 
@@ -40,19 +41,19 @@ const styles = StyleSheet.create({
   card: {
     width: '98%',
     minHeight: 260,
-    backgroundColor: 'linear-gradient(135deg, #f8fafc 0%, #e0e7ef 100%)', // fallback for RN: use a light color
-    borderRadius: 24,
-    padding: 32,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 6,
-    marginVertical: 18,
+    backgroundColor: '#fff',
+    borderRadius: 28,
+    padding: 36,
+    shadowColor: '#888', // soft gray shadow
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.18,
+    shadowRadius: 24,
+    elevation: 14,
+    marginVertical: 22,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#e0e7ef',
-    justifyContent: 'center', // vertical centering
+    borderWidth: 1.5,
+    borderColor: '#e0e0e0', // subtle light gray border
+    justifyContent: 'center',
   },
   word: {
     fontSize: 28, // smaller than before
@@ -197,10 +198,9 @@ export default function FlashcardsScreen() {
   const [loading, setLoading] = useState(true);
   const [showSetModal, setShowSetModal] = useState(false);
   const [newSetName, setNewSetName] = useState('');
+  const [importModalVisible, setImportModalVisible] = useState(false);
   const [flipped, setFlipped] = useState(false);
   const [hasHeader, setHasHeader] = useState(false);
-  const [menuVisible, setMenuVisible] = useState(false);
-  const [importModalVisible, setImportModalVisible] = useState(false);
   const [starredOnly, setStarredOnly] = useState(false);
 
   // Load from AsyncStorage
@@ -257,19 +257,19 @@ export default function FlashcardsScreen() {
 
   // Next/Back navigation
   const goToNext = () => {
-    if (!cards.length) return;
+    if (!displayCards.length) return;
     if (currentIdx === null) return;
     let idx = currentIdx + 1;
-    if (idx >= cards.length) idx = 0;
+    if (idx >= displayCards.length) idx = 0;
     setCurrentIdx(idx);
     setShowAnswer(false);
     setFlipped(false);
   };
   const goToPrev = () => {
-    if (!cards.length) return;
+    if (!displayCards.length) return;
     if (currentIdx === null) return;
     let idx = currentIdx - 1;
-    if (idx < 0) idx = cards.length - 1;
+    if (idx < 0) idx = displayCards.length - 1;
     setCurrentIdx(idx);
     setShowAnswer(false);
     setFlipped(false);
@@ -284,6 +284,39 @@ export default function FlashcardsScreen() {
     },
   });
 
+  // Place this just before the return statement inside FlashcardsScreen:
+  const MenuSheet = () => (
+    <ActionSheet id="flashcard-menu" gestureEnabled>
+      <View style={{ paddingVertical: 12 }}>
+        <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', padding: 16 }} onPress={() => { SheetManager.hide('flashcard-menu'); handleMenu('edit'); }}>
+          <MaterialIcons name="edit" size={24} color="#444" style={{ marginRight: 16 }} />
+          <Text style={{ fontSize: 18 }}>Edit set name</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', padding: 16 }} onPress={() => { SheetManager.hide('flashcard-menu'); handleMenu('import'); }}>
+          <MaterialIcons name="file-upload" size={24} color="#444" style={{ marginRight: 16 }} />
+          <Text style={{ fontSize: 18 }}>Import CSV</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', padding: 16 }} onPress={() => { SheetManager.hide('flashcard-menu'); handleMenu('starred'); }}>
+          <MaterialIcons name="star" size={24} color="#444" style={{ marginRight: 16 }} />
+          <Text style={{ fontSize: 18 }}>View starred</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', padding: 16 }} onPress={() => { SheetManager.hide('flashcard-menu'); handleMenu('reset'); }}>
+          <MaterialIcons name="refresh" size={24} color="#444" style={{ marginRight: 16 }} />
+          <Text style={{ fontSize: 18 }}>Reset stats</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', padding: 16 }} onPress={() => { SheetManager.hide('flashcard-menu'); handleMenu('delete'); }}>
+          <MaterialIcons name="delete" size={24} color="#444" style={{ marginRight: 16 }} />
+          <Text style={{ fontSize: 18, color: '#d00' }}>Delete set</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', padding: 16, justifyContent: 'center' }} onPress={() => SheetManager.hide('flashcard-menu')}>
+          <MaterialIcons name="close" size={24} color="#444" style={{ marginRight: 16 }} />
+          <Text style={{ fontSize: 18, color: '#888' }}>Cancel</Text>
+        </TouchableOpacity>
+      </View>
+    </ActionSheet>
+  );
+
+  
   // Handle CSV upload and merge
   const pickCSV = async () => {
     if (!selectedSet) {
@@ -431,9 +464,9 @@ export default function FlashcardsScreen() {
   // Card flip
   const flipCard = () => setFlipped(f => !f);
 
+  
   // Menu actions
   const handleMenu = (action: string) => {
-    setMenuVisible(false);
     if (action === 'edit') {
       setShowSetModal(true);
     } else if (action === 'import') {
@@ -442,10 +475,17 @@ export default function FlashcardsScreen() {
       deleteSet(selectedSetId!);
     } else if (action === 'starred') {
       setStarredOnly(true);
+      setCurrentIdx(bookmarks.length > 0 ? 0 : null);
     } else if (action === 'reset') {
       setLearned([]);
       setBookmarks([]);
     }
+  };
+
+  const openMenu = () => {
+    SheetManager.show('flashcard-menu', {
+      payload: {},
+    });
   };
   const closeStarred = () => setStarredOnly(false);
 
@@ -492,29 +532,18 @@ export default function FlashcardsScreen() {
     );
   }
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       {/* Top bar with set title, back button, and menu */}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: 8 }}>
         <TouchableOpacity onPress={() => setSelectedSetId(null)} style={{ padding: 8 }}>
           <Ionicons name="chevron-back" size={28} color="#333" />
         </TouchableOpacity>
         <Text style={{ fontSize: 22, fontWeight: 'bold', flex: 1, textAlign: 'center' }}>{selectedSet.name}</Text>
-        <TouchableOpacity onPress={() => setMenuVisible(true)} style={{ padding: 8 }}>
-          <Ionicons name="ellipsis-vertical" size={28} color="#333" />
+        <TouchableOpacity onPress={openMenu} style={{ padding: 8, marginTop: 8, marginRight: 4 }}>
+          <MaterialIcons name="more-horiz" size={30} color="#333" />
         </TouchableOpacity>
       </View>
-      {/* Menu modal */}
-      <Modal visible={menuVisible} transparent animationType="fade">
-        <TouchableOpacity style={styles.menuBg} onPress={() => setMenuVisible(false)} activeOpacity={1}>
-          <View style={styles.menuContent}>
-            <TouchableOpacity onPress={() => handleMenu('edit')} style={styles.menuItem}><Text>Edit set name</Text></TouchableOpacity>
-            <TouchableOpacity onPress={() => handleMenu('import')} style={styles.menuItem}><Text>Import CSV</Text></TouchableOpacity>
-            <TouchableOpacity onPress={() => handleMenu('starred')} style={styles.menuItem}><Text>View starred</Text></TouchableOpacity>
-            <TouchableOpacity onPress={() => handleMenu('reset')} style={styles.menuItem}><Text>Reset stats</Text></TouchableOpacity>
-            <TouchableOpacity onPress={() => handleMenu('delete')} style={styles.menuItem}><Text style={{ color: '#d00' }}>Delete set</Text></TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
+      <MenuSheet />
       {/* Import modal */}
       <Modal visible={importModalVisible} transparent animationType="slide">
         <View style={styles.importModalBg}>
@@ -601,6 +630,7 @@ export default function FlashcardsScreen() {
           </View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
+
