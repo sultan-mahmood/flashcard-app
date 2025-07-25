@@ -368,7 +368,9 @@ export default function SetPage() {
             ) : (
               <>
                 <Text style={styles.definition}>{current.definition}</Text>
-                <Text style={styles.example}>{current.example}</Text>
+                {current.example && current.example.trim() && (
+                  <Text style={styles.example}>{current.example}</Text>
+                )}
               </>
             )}
           </View>

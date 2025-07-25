@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as DocumentPicker from 'expo-document-picker';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import Papa from 'papaparse';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Button, FlatList, Modal, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import type { DocumentPickerAsset } from 'expo-document-picker';
@@ -98,6 +98,21 @@ export default function FlashcardsScreen() {
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ sets }));
   }, [sets]);
 
+  // Refresh sets when screen comes back into focus (e.g., after deleting a set)
+  useFocusEffect(
+    useCallback(() => {
+      (async () => {
+        try {
+          const data = await AsyncStorage.getItem(STORAGE_KEY);
+          if (data) {
+            const parsed = JSON.parse(data);
+            setSets(parsed.sets || []);
+          }
+        } catch (e) {}
+      })();
+    }, [])
+  );
+
   const handlePickCSV = async () => {
     setCsvLoading(true);
     const result = await DocumentPicker.getDocumentAsync({ type: 'text/csv' });
@@ -156,7 +171,7 @@ export default function FlashcardsScreen() {
         keyExtractor={item => item.id}
         contentContainerStyle={{ alignItems: 'flex-start', marginTop: 16 }}
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.setCard} onPress={() => router.push({ pathname: '/set/flashcard', params: { id: item.id } })}>
+          <TouchableOpacity style={styles.setCard} onPress={() => router.push({ pathname: '/set', params: { id: item.id } })}>
             <Text style={styles.setName}>{item.name}</Text>
             <Text style={styles.setCount}>{Array.isArray(item.items) ? item.items.length : 0} terms</Text>
           </TouchableOpacity>
