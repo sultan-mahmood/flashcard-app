@@ -2,10 +2,11 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from 'expo-av';
 import * as DocumentPicker from 'expo-document-picker';
+import { useRouter } from 'expo-router';
 import * as Speech from 'expo-speech';
 import Papa from 'papaparse';
 import React, { useEffect, useState } from 'react';
-import { Alert, Button, FlatList, Modal, PanResponder, SafeAreaView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Button, FlatList, Modal, PanResponder, SafeAreaView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import ActionSheet, { SheetManager } from 'react-native-actions-sheet';
 
 import type { DocumentPickerAsset } from 'expo-document-picker';
@@ -198,12 +199,11 @@ export default function FlashcardsScreen() {
   const [learned, setLearned] = useState<number[]>([]);
   const [bookmarks, setBookmarks] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showSetModal, setShowSetModal] = useState(false);
-  const [newSetName, setNewSetName] = useState('');
   const [importModalVisible, setImportModalVisible] = useState(false);
   const [flipped, setFlipped] = useState(false);
   const [hasHeader, setHasHeader] = useState(false);
   const [starredOnly, setStarredOnly] = useState(false);
+  const router = useRouter();
 
   // Load from AsyncStorage
   useEffect(() => {
@@ -420,19 +420,49 @@ export default function FlashcardsScreen() {
     setFlipped(false);
   };
 
-  // Add new set
+  // Add new set after file upload and name
   const addSet = () => {
-    if (!newSetName.trim()) return;
+    if (!newSetName.trim() || !pendingItems) return;
     const id = Date.now().toString();
-    setSets([...sets, { id, name: newSetName.trim(), items: [] }]);
+    setSets([...sets, { id, name: newSetName.trim(), items: pendingItems }]);
     setNewSetName('');
-    setShowSetModal(false);
-    setSelectedSetId(id);
+    setShowSetNameModal(false);
+    setPendingItems(null);
+    setSelectedSetId(null); // Go back to sets list
     setCurrentIdx(null);
     setLearned([]);
     setBookmarks([]);
     setShowAnswer(false);
     setFlipped(false);
+  };
+
+  // New add set flow: file upload then name
+  const handleAddSetFlow = async () => {
+    const result = await DocumentPicker.getDocumentAsync({ type: 'text/csv' });
+    if (!result.canceled && 'assets' in result && result.assets && result.assets.length > 0) {
+      const asset = result.assets[0] as DocumentPickerAsset;
+      const response = await fetch(asset.uri);
+      const csv = await response.text();
+      const parsed = Papa.parse(csv, { header: true });
+      const newItems: Item[] = parsed.data
+        .map((row: any) => {
+          if (!row) return null;
+          const norm: any = {};
+          Object.keys(row).forEach(k => {
+            norm[k.trim().toLowerCase()] = row[k];
+          });
+          return {
+            word: norm.word || '',
+            definition: norm.definition || '',
+            example: norm.example || ''
+          };
+        })
+        .filter(item => item && item.word && item.definition);
+      if (newItems.length > 0) {
+        setPendingItems(newItems);
+        setShowSetNameModal(true);
+      }
+    }
   };
 
   // Select set
@@ -470,7 +500,7 @@ export default function FlashcardsScreen() {
   // Menu actions
   const handleMenu = (action: string) => {
     if (action === 'edit') {
-      setShowSetModal(true);
+      setShowSetNameModal(true);
     } else if (action === 'import') {
       setImportModalVisible(true);
     } else if (action === 'delete') {
@@ -498,8 +528,11 @@ export default function FlashcardsScreen() {
       <SafeAreaView style={[styles.container, { position: 'relative', alignItems: 'flex-start', justifyContent: 'flex-start' }]}> 
         <View style={{ position: 'relative', width: '100%', marginBottom: 8, marginTop: 8, alignItems: 'center' }}>
           <Text style={[styles.title, { textAlign: 'center', width: '100%' }]}>Your Sets</Text>
-          <TouchableOpacity onPress={() => setShowSetModal(true)} style={{ position: 'absolute', right: 0, top: 0, padding: 6 }}>
+          <TouchableOpacity onPress={() => router.push('/add-set')} style={{ position: 'absolute', right: 0, top: 0, padding: 6 }}>
             <Ionicons name="add" size={28} color="#007aff" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push('/test-modal')} style={{ position: 'absolute', left: 0, top: 0, padding: 6 }}>
+            <Ionicons name="bug" size={28} color="#ff9800" />
           </TouchableOpacity>
         </View>
         <FlatList
@@ -517,21 +550,7 @@ export default function FlashcardsScreen() {
           )}
           ListEmptyComponent={<Text style={{ textAlign: 'center', color: '#888', marginTop: 40 }}>No sets yet. Tap + to create your first set.</Text>}
         />
-        <Modal visible={showSetModal} animationType="slide" transparent>
-          <View style={styles.modalBg}>
-            <View style={styles.modalContent}>
-              <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 12 }}>Create New Set</Text>
-              <TextInput
-                placeholder="New set name"
-                value={newSetName}
-                onChangeText={setNewSetName}
-                style={styles.input}
-              />
-              <Button title="Add Set" onPress={addSet} />
-              <Button title="Close" onPress={() => setShowSetModal(false)} color="#888" />
-            </View>
-          </View>
-        </Modal>
+        {/* Add Set modal logic moved to /add-set screen */}
       </SafeAreaView>
     );
   }
@@ -609,31 +628,7 @@ export default function FlashcardsScreen() {
         Upload a CSV file with columns: &quot;word,definition,example&quot; (header required).
       </Text>
       {/* Set Modal */}
-      <Modal visible={showSetModal} animationType="slide" transparent>
-        <View style={styles.modalBg}>
-          <View style={styles.modalContent}>
-            <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 12 }}>Sets</Text>
-            <FlatList
-              data={sets}
-              keyExtractor={item => item.id}
-              renderItem={({ item }) => (
-                <TouchableOpacity onPress={() => { selectSet(item.id); setShowSetModal(false); }} style={{ padding: 8 }}>
-                  <Text style={{ fontSize: 16 }}>{item.name}</Text>
-                </TouchableOpacity>
-              )}
-              ListEmptyComponent={<Text>No sets yet.</Text>}
-            />
-            <TextInput
-              placeholder="New set name"
-              value={newSetName}
-              onChangeText={setNewSetName}
-              style={styles.input}
-            />
-            <Button title="Add Set" onPress={addSet} />
-            <Button title="Close" onPress={() => setShowSetModal(false)} color="#888" />
-          </View>
-        </View>
-      </Modal>
+      {/* Set Modal */}
     </SafeAreaView>
   );
 }
