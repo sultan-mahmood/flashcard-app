@@ -307,9 +307,28 @@ export default function SetPage() {
 
   const toggleBookmark = () => {
     if (currentIdx === null) return;
-    const newBookmarks = bookmarks.includes(currentIdx) 
-      ? bookmarks.filter(idx => idx !== currentIdx)
-      : [...bookmarks, currentIdx];
+    
+    let newBookmarks;
+    if (starredOnly) {
+      // In starred mode, we're viewing a starred item, so remove it from bookmarks
+      // We need to find the original index of this starred item in the full set
+      const currentStarredItem = starredItems[starredCurrentIdx];
+      const originalIndex = set!.items.findIndex(item => 
+        item.word === currentStarredItem.word && 
+        item.definition === currentStarredItem.definition
+      );
+      
+      if (originalIndex !== -1) {
+        newBookmarks = bookmarks.filter(idx => idx !== originalIndex);
+      } else {
+        return; // Couldn't find the original item
+      }
+    } else {
+      // In full set mode, toggle the bookmark for the current item
+      newBookmarks = bookmarks.includes(currentIdx) 
+        ? bookmarks.filter(idx => idx !== currentIdx)
+        : [...bookmarks, currentIdx];
+    }
     
     setBookmarks(newBookmarks);
     saveBookmarks(newBookmarks);
@@ -602,6 +621,11 @@ export default function SetPage() {
           <View style={styles.importModalContent}>
             <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 12 }}>Import CSV to Set</Text>
             
+            {/* CSV format hint - shown before upload */}
+            <Text style={{ fontSize: 11, color: '#888', marginBottom: 12, fontStyle: 'italic', textAlign: 'center' }}>
+              CSV columns should be: term, definition, example (optional)
+            </Text>
+            
             {/* Step 1: Upload CSV File */}
             <Button 
               title={importLoading ? 'Loading...' : (pendingImport.length ? 'CSV Loaded ✓' : 'Upload CSV File')} 
@@ -623,17 +647,12 @@ export default function SetPage() {
                 <Text style={{ fontSize: 12, color: '#666', marginBottom: 8 }}>
                   {processCSVDataForImport(pendingImport, importHasHeader).length} items ready to merge
                 </Text>
-                <Text style={{ fontSize: 12, color: '#007aff', marginBottom: 12 }}>
+                <Text style={{ fontSize: 12, color: '#007aff', marginBottom: 8 }}>
                   Duplicates will be replaced with new data
                 </Text>
                 <Button title="Merge with Set" onPress={handleImportMerge} />
               </>
             )}
-            
-            {/* Debug info */}
-            <Text style={{ fontSize: 10, color: '#999', marginTop: 8 }}>
-              Debug: raw rows = {pendingImport.length}, processed = {processCSVDataForImport(pendingImport, importHasHeader).length}
-            </Text>
             
             <Button 
               title="Cancel" 
@@ -658,7 +677,11 @@ export default function SetPage() {
             </TouchableOpacity>
             {/* Star icon: top right */}
             <TouchableOpacity onPress={toggleBookmark} style={{ position: 'absolute', top: 12, right: 16, zIndex: 2, padding: 4 }}>
-              <Ionicons name={bookmarks.includes(currentIdx) ? "star" : "star-outline"} size={28} color={bookmarks.includes(currentIdx) ? '#FFD700' : '#bbb'} />
+              <Ionicons 
+                name={starredOnly ? "star" : (bookmarks.includes(currentIdx) ? "star" : "star-outline")} 
+                size={28} 
+                color={starredOnly ? '#FFD700' : (bookmarks.includes(currentIdx) ? '#FFD700' : '#bbb')} 
+              />
             </TouchableOpacity>
             {/* Card content with tap to flip */}
             <TouchableOpacity 

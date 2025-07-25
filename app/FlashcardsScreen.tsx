@@ -125,7 +125,14 @@ export default function FlashcardsScreen() {
       
       // Store the raw parsed data
       setPendingItems(parsed.data);
+      
+      // Extract filename without extension and use as default set name
+      const fileName = asset.name || 'Untitled';
+      const fileNameWithoutExtension = fileName.replace(/\.csv$/i, '');
+      setNewSetName(fileNameWithoutExtension);
+      
       console.log('Raw CSV data stored:', parsed.data.length, 'rows');
+      console.log('Default set name:', fileNameWithoutExtension);
     }
     setCsvLoading(false);
   };
@@ -201,6 +208,11 @@ export default function FlashcardsScreen() {
           <View style={styles.importModalContent}>
             <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 12 }}>Create New Set</Text>
             
+            {/* CSV format hint - shown before upload */}
+            <Text style={{ fontSize: 11, color: '#888', marginBottom: 12, fontStyle: 'italic', textAlign: 'center' }}>
+              CSV columns should be: term, definition, example (optional)
+            </Text>
+            
             {/* Step 1: Upload CSV File */}
             <Button 
               title={csvLoading ? 'Loading...' : (pendingItems ? 'CSV Loaded ✓' : 'Upload CSV File')} 
@@ -226,19 +238,14 @@ export default function FlashcardsScreen() {
                   placeholder="Enter set name"
                   value={newSetName}
                   onChangeText={setNewSetName}
-                  style={{ borderWidth: 1, borderColor: '#ccc', borderRadius: 6, padding: 8, marginVertical: 8, width: '100%' }}
+                  style={{ borderWidth: 1, borderColor: '#ccc', borderRadius: 6, padding: 12, marginVertical: 8, width: '100%', minHeight: 50 }}
                 />
-                <Text style={{ fontSize: 12, color: '#666', marginBottom: 12 }}>
+                <Text style={{ fontSize: 12, color: '#666', marginBottom: 8 }}>
                   {processCSVData(pendingItems, importHasHeader).length} items will be created
                 </Text>
                 <Button title="Create Set" onPress={handleAddSet} disabled={!newSetName.trim()} />
               </>
             )}
-            
-            {/* Debug info */}
-            <Text style={{ fontSize: 10, color: '#999', marginTop: 8 }}>
-              Debug: raw rows = {pendingItems ? pendingItems.length : 'null'}, processed = {pendingItems ? processCSVData(pendingItems, importHasHeader).length : 'null'}
-            </Text>
             
             <Button 
               title="Cancel" 
