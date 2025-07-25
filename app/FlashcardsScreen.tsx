@@ -78,8 +78,9 @@ export default function FlashcardsScreen() {
   const [sets, setSets] = useState<CardSet[]>([]);
   const [showAddSetModal, setShowAddSetModal] = useState(false);
   const [newSetName, setNewSetName] = useState('');
-  const [pendingItems, setPendingItems] = useState<Item[] | null>(null);
+  const [pendingItems, setPendingItems] = useState<any[] | null>(null);
   const [csvLoading, setCsvLoading] = useState(false);
+  const [importHasHeader, setImportHasHeader] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
@@ -120,34 +121,50 @@ export default function FlashcardsScreen() {
       const asset = result.assets[0] as DocumentPickerAsset;
       const response = await fetch(asset.uri);
       const csv = await response.text();
-      const parsed = Papa.parse(csv, { header: true });
-      const newItems: Item[] = parsed.data
-        .map((row: any) => {
-          if (!row) return null;
-          const norm: any = {};
-          Object.keys(row).forEach(k => {
-            norm[k.trim().toLowerCase()] = row[k];
-          });
-          return {
-            word: norm.word || '',
-            definition: norm.definition || '',
-            example: norm.example || ''
-          };
-        })
-        .filter(item => item && item.word && item.definition);
-      if (newItems.length > 0) {
-        setPendingItems(newItems);
-      }
+      const parsed = Papa.parse(csv, { header: false }); // Always parse as arrays
+      
+      // Store the raw parsed data
+      setPendingItems(parsed.data);
+      console.log('Raw CSV data stored:', parsed.data.length, 'rows');
     }
     setCsvLoading(false);
   };
 
+  const processCSVData = (rawData: any[], hasHeader: boolean): Item[] => {
+    let dataRows = rawData;
+    
+    if (hasHeader) {
+      // Skip the first row (header) and process remaining rows as data
+      dataRows = rawData.slice(1);
+    }
+    
+    return dataRows
+      .map((row: any) => {
+        if (!Array.isArray(row) || row.length < 2) return null;
+        return {
+          word: row[0] || '',
+          definition: row[1] || '',
+          example: row[2] || ''
+        };
+      })
+      .filter((item): item is Item => item !== null && item.word && item.definition);
+  };
+
   const handleAddSet = () => {
     if (!newSetName || !pendingItems) return;
+    
+    // Process the CSV data based on current header setting
+    const processedItems = processCSVData(pendingItems, importHasHeader);
+    
+    if (processedItems.length === 0) {
+      console.log('No valid items found after processing');
+      return;
+    }
+    
     const newSet: CardSet = {
       id: Date.now().toString(),
       name: newSetName,
-      items: pendingItems,
+      items: processedItems,
     };
     setSets([...sets, newSet]);
     setShowAddSetModal(false);
@@ -182,20 +199,56 @@ export default function FlashcardsScreen() {
       <Modal visible={showAddSetModal} transparent animationType="slide">
         <View style={styles.importModalBg}>
           <View style={styles.importModalContent}>
-            <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 12 }}>Add New Set</Text>
-            <Button title={csvLoading ? 'Loading...' : (pendingItems ? 'CSV Loaded' : 'Pick CSV File')} onPress={handlePickCSV} disabled={csvLoading} />
+            <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 12 }}>Create New Set</Text>
+            
+            {/* Step 1: Upload CSV File */}
+            <Button 
+              title={csvLoading ? 'Loading...' : (pendingItems ? 'CSV Loaded ✓' : 'Upload CSV File')} 
+              onPress={handlePickCSV} 
+              disabled={csvLoading} 
+            />
+            
+            {/* Header toggle option */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 12 }}>
+              <Text>File has header row</Text>
+              <TouchableOpacity onPress={() => setImportHasHeader(h => !h)} style={{ marginLeft: 8 }}>
+                <Ionicons name={importHasHeader ? 'checkbox' : 'square-outline'} size={24} color="#007aff" />
+              </TouchableOpacity>
+            </View>
+            
+            {/* Step 2: Enter Set Name (only show after CSV is loaded) */}
             {pendingItems && (
               <>
+                <Text style={{ marginTop: 16, marginBottom: 8, fontWeight: 'bold' }}>
+                  Set Name:
+                </Text>
                 <TextInput
-                  placeholder="Set Name"
+                  placeholder="Enter set name"
                   value={newSetName}
                   onChangeText={setNewSetName}
-                  style={{ borderWidth: 1, borderColor: '#ccc', borderRadius: 6, padding: 8, marginVertical: 12 }}
+                  style={{ borderWidth: 1, borderColor: '#ccc', borderRadius: 6, padding: 8, marginVertical: 8, width: '100%' }}
                 />
-                <Button title="Add Set" onPress={handleAddSet} disabled={!newSetName} />
+                <Text style={{ fontSize: 12, color: '#666', marginBottom: 12 }}>
+                  {processCSVData(pendingItems, importHasHeader).length} items will be created
+                </Text>
+                <Button title="Create Set" onPress={handleAddSet} disabled={!newSetName.trim()} />
               </>
             )}
-            <Button title="Close" onPress={() => { setShowAddSetModal(false); setPendingItems(null); setNewSetName(''); }} color="#888" />
+            
+            {/* Debug info */}
+            <Text style={{ fontSize: 10, color: '#999', marginTop: 8 }}>
+              Debug: raw rows = {pendingItems ? pendingItems.length : 'null'}, processed = {pendingItems ? processCSVData(pendingItems, importHasHeader).length : 'null'}
+            </Text>
+            
+            <Button 
+              title="Cancel" 
+              onPress={() => { 
+                setShowAddSetModal(false); 
+                setPendingItems(null); 
+                setNewSetName(''); 
+              }} 
+              color="#888" 
+            />
           </View>
         </View>
       </Modal>

@@ -8,7 +8,7 @@ import React, { useEffect, useState } from 'react';
 import { Button, Modal, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import ActionSheet, { SheetManager } from 'react-native-actions-sheet';
 
-import type { CardSet } from '../FlashcardsScreen';
+import type { CardSet, Item } from '../FlashcardsScreen';
 
 export const options = {
   headerShown: false,
@@ -214,51 +214,78 @@ export default function SetPage() {
       const asset = result.assets[0];
       const response = await fetch(asset.uri);
       const csv = await response.text();
-      const parsed = Papa.parse(csv, { header: importHasHeader });
-      let newItems: any[] = [];
-      if (importHasHeader) {
-        newItems = parsed.data.map((row: any) => {
-          const norm: any = {};
-          Object.keys(row).forEach(k => {
-            norm[k.trim().toLowerCase()] = row[k];
-          });
-          return {
-            word: norm.word || '',
-            definition: norm.definition || '',
-            example: norm.example || ''
-          };
-        }).filter(item => item && item.word && item.definition);
-      } else {
-        newItems = parsed.data
-          .map((row: any) => {
-            if (!Array.isArray(row) || row.length < 2) return null;
-            return {
-              word: row[0] || '',
-              definition: row[1] || '',
-              example: row[2] || ''
-            };
-          })
-          .filter((item: any) => !!item && !!item.word && !!item.definition);
-      }
-      setPendingImport(newItems);
+      const parsed = Papa.parse(csv, { header: false }); // Always parse as arrays
+      
+      // Store the raw parsed data
+      setPendingImport(parsed.data);
+      console.log('Raw CSV data stored for import:', parsed.data.length, 'rows');
     }
     setImportLoading(false);
   };
+
+  const processCSVDataForImport = (rawData: any[], hasHeader: boolean): Item[] => {
+    let dataRows = rawData;
+    
+    if (hasHeader) {
+      // Skip the first row (header) and process remaining rows as data
+      dataRows = rawData.slice(1);
+    }
+    
+    return dataRows
+      .map((row: any) => {
+        if (!Array.isArray(row) || row.length < 2) return null;
+        return {
+          word: row[0] || '',
+          definition: row[1] || '',
+          example: row[2] || ''
+        };
+      })
+      .filter((item): item is Item => item !== null && item.word && item.definition);
+  };
+
   const handleImportMerge = async () => {
     if (!set || !pendingImport) return;
-    const existingWords = new Set(set.items.map(item => item.word));
-    const merged = [
-      ...set.items,
-      ...pendingImport.filter(item => !existingWords.has(item.word))
-    ];
+    
+    // Process the CSV data based on current header setting
+    const processedItems = processCSVDataForImport(pendingImport, importHasHeader);
+    
+    if (processedItems.length === 0) {
+      console.log('No valid items found after processing');
+      return;
+    }
+    
+    // Create a map of existing items by word for quick lookup
+    const existingItemsMap = new Map();
+    set.items.forEach(item => {
+      existingItemsMap.set(item.word.toLowerCase(), item);
+    });
+    
+    // Process new items, replacing duplicates with new data
+    const mergedItems = [...set.items]; // Start with existing items
+    
+    processedItems.forEach(newItem => {
+      const existingItem = existingItemsMap.get(newItem.word.toLowerCase());
+      if (existingItem) {
+        // Replace existing item with new item
+        const index = mergedItems.findIndex(item => item.word.toLowerCase() === newItem.word.toLowerCase());
+        if (index !== -1) {
+          mergedItems[index] = newItem;
+        }
+      } else {
+        // Add new item
+        mergedItems.push(newItem);
+      }
+    });
+    
+    // Update the set in AsyncStorage and local state
     const data = await AsyncStorage.getItem(STORAGE_KEY);
     if (data) {
       const parsed = JSON.parse(data);
       const newSets = (parsed.sets || []).map((s: CardSet) =>
-        s.id === id ? { ...s, items: merged } : s
+        s.id === id ? { ...s, items: mergedItems } : s
       );
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ sets: newSets }));
-      setSet({ ...set, items: merged });
+      setSet({ ...set, items: mergedItems });
     }
     setImportModalVisible(false);
     setPendingImport([]);
@@ -295,7 +322,7 @@ export default function SetPage() {
             <Ionicons name="create-outline" size={24} color="#444" style={{ marginRight: 16 }} />
             <Text style={{ fontSize: 18 }}>Edit set name</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', padding: 16 }} onPress={() => { SheetManager.hide('set-menu'); handleMenu('import'); }}>
+          <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', padding: 16 }} onPress={() => { SheetManager.hide('set-menu'); setTimeout(() => handleMenu('import'), 300); }}>
             <Ionicons name="cloud-upload-outline" size={24} color="#444" style={{ marginRight: 16 }} />
             <Text style={{ fontSize: 18 }}>Import CSV</Text>
           </TouchableOpacity>
@@ -337,18 +364,49 @@ export default function SetPage() {
       <Modal visible={importModalVisible} transparent animationType="slide">
         <View style={styles.importModalBg}>
           <View style={styles.importModalContent}>
-            <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 12 }}>Import CSV</Text>
-            <Button title={importLoading ? 'Loading...' : (pendingImport.length ? 'CSV Loaded' : 'Pick CSV File')} onPress={handlePickCSV} disabled={importLoading} />
+            <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 12 }}>Import CSV to Set</Text>
+            
+            {/* Step 1: Upload CSV File */}
+            <Button 
+              title={importLoading ? 'Loading...' : (pendingImport.length ? 'CSV Loaded ✓' : 'Upload CSV File')} 
+              onPress={handlePickCSV} 
+              disabled={importLoading} 
+            />
+            
+            {/* Header toggle option */}
             <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 12 }}>
               <Text>File has header row</Text>
               <TouchableOpacity onPress={() => setImportHasHeader(h => !h)} style={{ marginLeft: 8 }}>
                 <Ionicons name={importHasHeader ? 'checkbox' : 'square-outline'} size={24} color="#007aff" />
               </TouchableOpacity>
             </View>
+            
+            {/* Step 2: Show merge info and button */}
             {pendingImport.length > 0 && (
-              <Button title="Merge" onPress={handleImportMerge} />
+              <>
+                <Text style={{ fontSize: 12, color: '#666', marginBottom: 8 }}>
+                  {processCSVDataForImport(pendingImport, importHasHeader).length} items ready to merge
+                </Text>
+                <Text style={{ fontSize: 12, color: '#007aff', marginBottom: 12 }}>
+                  Duplicates will be replaced with new data
+                </Text>
+                <Button title="Merge with Set" onPress={handleImportMerge} />
+              </>
             )}
-            <Button title="Close" onPress={() => { setImportModalVisible(false); setPendingImport([]); }} color="#888" />
+            
+            {/* Debug info */}
+            <Text style={{ fontSize: 10, color: '#999', marginTop: 8 }}>
+              Debug: raw rows = {pendingImport.length}, processed = {processCSVDataForImport(pendingImport, importHasHeader).length}
+            </Text>
+            
+            <Button 
+              title="Cancel" 
+              onPress={() => { 
+                setImportModalVisible(false); 
+                setPendingImport([]); 
+              }} 
+              color="#888" 
+            />
           </View>
         </View>
       </Modal>
