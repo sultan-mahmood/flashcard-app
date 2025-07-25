@@ -7,6 +7,7 @@ import Papa from 'papaparse';
 import React, { useEffect, useState } from 'react';
 import { Button, Modal, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import ActionSheet, { SheetManager } from 'react-native-actions-sheet';
+import { PanGestureHandler, State } from 'react-native-gesture-handler';
 
 import type { CardSet, Item } from '../FlashcardsScreen';
 
@@ -105,6 +106,9 @@ export default function SetPage() {
   const [importLoading, setImportLoading] = useState(false);
   const [pendingImport, setPendingImport] = useState<any[]>([]);
   const [starredOnly, setStarredOnly] = useState(false);
+  const [starredCurrentIdx, setStarredCurrentIdx] = useState(0);
+  const [starredItems, setStarredItems] = useState<Item[]>([]);
+  const [starredItemsInitialized, setStarredItemsInitialized] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -114,9 +118,59 @@ export default function SetPage() {
           const parsed = JSON.parse(data);
           const found = (parsed.sets || []).find((s: CardSet) => s.id === id);
           if (found) {
-            // Shuffle the items array
-            const shuffled = [...found.items].sort(() => Math.random() - 0.5);
-            setSet({ ...found, items: shuffled });
+            // Check if we have a stored shuffled order for this set
+            const shuffledOrderKey = `shuffled_order_${id}`;
+            const shuffledOrderData = await AsyncStorage.getItem(shuffledOrderKey);
+            
+            let shuffledItems;
+            if (shuffledOrderData) {
+              // Use the stored shuffled order
+              const shuffledOrder = JSON.parse(shuffledOrderData);
+              shuffledItems = shuffledOrder.map((index: number) => found.items[index]);
+            } else {
+              // First time loading this set - create and store shuffled order
+              const shuffledOrder = Array.from({ length: found.items.length }, (_, i) => i)
+                .sort(() => Math.random() - 0.5);
+              shuffledItems = shuffledOrder.map((index: number) => found.items[index]);
+              await AsyncStorage.setItem(shuffledOrderKey, JSON.stringify(shuffledOrder));
+            }
+            
+            setSet({ ...found, items: shuffledItems });
+            
+            // Load bookmarks and learned states for this set
+            const bookmarksKey = `bookmarks_${id}`;
+            const learnedKey = `learned_${id}`;
+            const currentPositionKey = `current_position_${id}`;
+            
+            const bookmarksData = await AsyncStorage.getItem(bookmarksKey);
+            const learnedData = await AsyncStorage.getItem(learnedKey);
+            const currentPositionData = await AsyncStorage.getItem(currentPositionKey);
+            
+            if (bookmarksData) {
+              setBookmarks(JSON.parse(bookmarksData));
+            }
+            if (learnedData) {
+              setLearned(JSON.parse(learnedData));
+            }
+            if (currentPositionData) {
+              setCurrentIdx(JSON.parse(currentPositionData));
+            }
+            
+            // Load starred items order and position
+            const starredOrderKey = `starred_items_${id}`;
+            const starredPositionKey = `starred_position_${id}`;
+            
+            const starredOrderData = await AsyncStorage.getItem(starredOrderKey);
+            const starredPositionData = await AsyncStorage.getItem(starredPositionKey);
+            
+            if (starredOrderData) {
+              const starredItemsList = JSON.parse(starredOrderData);
+              setStarredItems(starredItemsList);
+              setStarredItemsInitialized(true);
+            }
+            if (starredPositionData) {
+              setStarredCurrentIdx(JSON.parse(starredPositionData));
+            }
           } else {
             setSet(null);
           }
@@ -124,6 +178,103 @@ export default function SetPage() {
       } catch {}
     })();
   }, [id]);
+
+  // Save bookmarks to AsyncStorage whenever they change
+  const saveBookmarks = async (newBookmarks: number[]) => {
+    try {
+      const bookmarksKey = `bookmarks_${id}`;
+      await AsyncStorage.setItem(bookmarksKey, JSON.stringify(newBookmarks));
+    } catch (error) {
+      console.error('Error saving bookmarks:', error);
+    }
+  };
+
+  // Save learned states to AsyncStorage whenever they change
+  const saveLearned = async (newLearned: number[]) => {
+    try {
+      const learnedKey = `learned_${id}`;
+      await AsyncStorage.setItem(learnedKey, JSON.stringify(newLearned));
+    } catch (error) {
+      console.error('Error saving learned states:', error);
+    }
+  };
+
+  // Save current position to AsyncStorage
+  const saveCurrentPosition = async (position: number) => {
+    try {
+      const currentPositionKey = `current_position_${id}`;
+      await AsyncStorage.setItem(currentPositionKey, JSON.stringify(position));
+    } catch (error) {
+      console.error('Error saving current position:', error);
+    }
+  };
+
+  // Save starred position to AsyncStorage
+  const saveStarredPosition = async (position: number) => {
+    try {
+      const starredPositionKey = `starred_position_${id}`;
+      await AsyncStorage.setItem(starredPositionKey, JSON.stringify(position));
+    } catch (error) {
+      console.error('Error saving starred position:', error);
+    }
+  };
+
+  // Update starred items order and save it
+  const updateStarredItems = async (newBookmarks: number[]) => {
+    if (newBookmarks.length === 0) {
+      setStarredItems([]);
+      // Clear starred items from storage when no bookmarks
+      try {
+        const starredOrderKey = `starred_items_${id}`;
+        const starredPositionKey = `starred_position_${id}`;
+        await AsyncStorage.removeItem(starredOrderKey);
+        await AsyncStorage.removeItem(starredPositionKey);
+      } catch (error) {
+        console.error('Error clearing starred items:', error);
+      }
+      return;
+    }
+    
+    // Get the actual starred items from the current set order
+    const starredItemsFromSet = newBookmarks.map((index: number) => set!.items[index]);
+    
+    // Create a new shuffled order for starred items
+    const shuffledStarredItems = [...starredItemsFromSet].sort(() => Math.random() - 0.5);
+    
+    setStarredItems(shuffledStarredItems);
+    setStarredCurrentIdx(0); // Reset to first starred item
+    setStarredItemsInitialized(true);
+    
+    // Save the starred items directly (not indices)
+    try {
+      const starredOrderKey = `starred_items_${id}`;
+      const starredPositionKey = `starred_position_${id}`;
+      await AsyncStorage.setItem(starredOrderKey, JSON.stringify(shuffledStarredItems));
+      await AsyncStorage.setItem(starredPositionKey, JSON.stringify(0));
+    } catch (error) {
+      console.error('Error saving starred items:', error);
+    }
+  };
+
+  // Initialize starred items only if they don't exist and we have bookmarks
+  const initializeStarredItems = async () => {
+    if (starredItems.length === 0 && bookmarks.length > 0) {
+      // Get the actual starred items from the current set order
+      const starredItemsFromSet = bookmarks.map((index: number) => set!.items[index]);
+      const shuffledStarredItems = [...starredItemsFromSet].sort(() => Math.random() - 0.5);
+      setStarredItems(shuffledStarredItems);
+      
+      // Save the starred items directly
+      try {
+        const starredOrderKey = `starred_items_${id}`;
+        const starredPositionKey = `starred_position_${id}`;
+        await AsyncStorage.setItem(starredOrderKey, JSON.stringify(shuffledStarredItems));
+        await AsyncStorage.setItem(starredPositionKey, JSON.stringify(0));
+      } catch (error) {
+        console.error('Error saving starred items:', error);
+      }
+    }
+  };
 
   if (!set) {
     return (
@@ -145,8 +296,9 @@ export default function SetPage() {
     );
   }
 
-  const items = set ? (starredOnly ? set.items.filter((_, idx) => bookmarks.includes(idx)) : set.items) : [];
-  const current = items[currentIdx];
+  const items = starredOnly ? starredItems : (set ? set.items : []);
+  const current = starredOnly ? starredItems[starredCurrentIdx] : (set ? set.items[currentIdx] : null);
+  const currentPosition = starredOnly ? starredCurrentIdx : currentIdx;
 
   const pronounce = () => {
     if (!current) return;
@@ -155,15 +307,53 @@ export default function SetPage() {
 
   const toggleBookmark = () => {
     if (currentIdx === null) return;
-    if (bookmarks.includes(currentIdx)) {
-      setBookmarks(bookmarks.filter(idx => idx !== currentIdx));
-    } else {
-      setBookmarks([...bookmarks, currentIdx]);
+    const newBookmarks = bookmarks.includes(currentIdx) 
+      ? bookmarks.filter(idx => idx !== currentIdx)
+      : [...bookmarks, currentIdx];
+    
+    setBookmarks(newBookmarks);
+    saveBookmarks(newBookmarks);
+    updateStarredItems(newBookmarks);
+  };
+
+  // Swipe gesture handling
+  const onGestureEvent = (event: any) => {
+    // This will be called during the gesture
+  };
+
+  const onHandlerStateChange = (event: any) => {
+    if (event.nativeEvent.state === State.END) {
+      const { translationX } = event.nativeEvent;
+      const swipeThreshold = 50; // Minimum distance to trigger swipe
+      
+      if (translationX > swipeThreshold) {
+        // Swipe right - go to previous card
+        const newIndex = (currentPosition - 1 + items.length) % items.length;
+        if (starredOnly) {
+          setStarredCurrentIdx(newIndex);
+          saveStarredPosition(newIndex);
+        } else {
+          setCurrentIdx(newIndex);
+          saveCurrentPosition(newIndex);
+        }
+        setFlipped(false); // Reset card to front side
+      } else if (translationX < -swipeThreshold) {
+        // Swipe left - go to next card
+        const newIndex = (currentPosition + 1) % items.length;
+        if (starredOnly) {
+          setStarredCurrentIdx(newIndex);
+          saveStarredPosition(newIndex);
+        } else {
+          setCurrentIdx(newIndex);
+          saveCurrentPosition(newIndex);
+        }
+        setFlipped(false); // Reset card to front side
+      }
     }
   };
 
   // Menu actions
-  const handleMenu = (action: string) => {
+  const handleMenu = async (action: string) => {
     if (action === 'edit') {
       setEditName(set?.name || '');
       setEditModalVisible(true);
@@ -172,12 +362,45 @@ export default function SetPage() {
     } else if (action === 'starred') {
       setStarredOnly(true);
       if (bookmarks.length > 0) {
-        setCurrentIdx(bookmarks[0]);
+        // Initialize starred items only if they haven't been initialized yet
+        if (!starredItemsInitialized) {
+          await initializeStarredItems();
+          setStarredItemsInitialized(true);
+          // Only reset position when initializing new starred items
+          setStarredCurrentIdx(0);
+          saveStarredPosition(0);
+        }
+        // Don't reset position if starred items already exist
       }
     } else if (action === 'reset') {
       setLearned([]);
       setBookmarks([]);
       setStarredOnly(false);
+      setCurrentIdx(0);
+      setStarredItems([]);
+      setStarredItemsInitialized(false);
+      // Clear persisted data
+      const bookmarksKey = `bookmarks_${id}`;
+      const learnedKey = `learned_${id}`;
+      const currentPositionKey = `current_position_${id}`;
+      const shuffledOrderKey = `shuffled_order_${id}`;
+      const starredOrderKey = `starred_items_${id}`;
+      const starredPositionKey = `starred_position_${id}`;
+      AsyncStorage.removeItem(bookmarksKey);
+      AsyncStorage.removeItem(learnedKey);
+      AsyncStorage.removeItem(currentPositionKey);
+      AsyncStorage.removeItem(shuffledOrderKey);
+      AsyncStorage.removeItem(starredOrderKey);
+      AsyncStorage.removeItem(starredPositionKey);
+      
+      // Re-shuffle the cards for a fresh start
+      if (set) {
+        const newShuffledOrder = Array.from({ length: set.items.length }, (_, i) => i)
+          .sort(() => Math.random() - 0.5);
+        const newShuffledItems = newShuffledOrder.map((index: number) => set.items[index]);
+        setSet({ ...set, items: newShuffledItems });
+        AsyncStorage.setItem(shuffledOrderKey, JSON.stringify(newShuffledOrder));
+      }
     } else if (action === 'delete') {
       (async () => {
         const data = await AsyncStorage.getItem(STORAGE_KEY);
@@ -186,6 +409,19 @@ export default function SetPage() {
           const newSets = (parsed.sets || []).filter((s: CardSet) => s.id !== id);
           await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ sets: newSets }));
         }
+        // Clean up persisted data for this set
+        const bookmarksKey = `bookmarks_${id}`;
+        const learnedKey = `learned_${id}`;
+        const currentPositionKey = `current_position_${id}`;
+        const shuffledOrderKey = `shuffled_order_${id}`;
+        const starredOrderKey = `starred_items_${id}`;
+        const starredPositionKey = `starred_position_${id}`;
+        await AsyncStorage.removeItem(bookmarksKey);
+        await AsyncStorage.removeItem(learnedKey);
+        await AsyncStorage.removeItem(currentPositionKey);
+        await AsyncStorage.removeItem(shuffledOrderKey);
+        await AsyncStorage.removeItem(starredOrderKey);
+        await AsyncStorage.removeItem(starredPositionKey);
         router.back();
       })();
     }
@@ -411,38 +647,68 @@ export default function SetPage() {
         </View>
       </Modal>
       {current && (
-        <TouchableOpacity style={styles.card} onPress={() => setFlipped(f => !f)} activeOpacity={0.9}>
-          {/* Audio icon: top left */}
-          <TouchableOpacity onPress={pronounce} style={{ position: 'absolute', top: 12, left: 16, zIndex: 2, padding: 4 }}>
-            <Ionicons name="volume-high" size={28} color="#007aff" />
-          </TouchableOpacity>
-          {/* Star icon: top right */}
-          <TouchableOpacity onPress={toggleBookmark} style={{ position: 'absolute', top: 12, right: 16, zIndex: 2, padding: 4 }}>
-            <Ionicons name={bookmarks.includes(currentIdx) ? "star" : "star-outline"} size={28} color={bookmarks.includes(currentIdx) ? '#FFD700' : '#bbb'} />
-          </TouchableOpacity>
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            {!flipped ? (
-              <Text style={styles.word}>{current.word}</Text>
-            ) : (
-              <>
-                <Text style={styles.definition}>{current.definition}</Text>
-                {current.example && current.example.trim() && (
-                  <Text style={styles.example}>{current.example}</Text>
+        <PanGestureHandler
+          onGestureEvent={onGestureEvent}
+          onHandlerStateChange={onHandlerStateChange}
+        >
+          <View style={styles.card}>
+            {/* Audio icon: top left */}
+            <TouchableOpacity onPress={pronounce} style={{ position: 'absolute', top: 12, left: 16, zIndex: 2, padding: 4 }}>
+              <Ionicons name="volume-high" size={28} color="#007aff" />
+            </TouchableOpacity>
+            {/* Star icon: top right */}
+            <TouchableOpacity onPress={toggleBookmark} style={{ position: 'absolute', top: 12, right: 16, zIndex: 2, padding: 4 }}>
+              <Ionicons name={bookmarks.includes(currentIdx) ? "star" : "star-outline"} size={28} color={bookmarks.includes(currentIdx) ? '#FFD700' : '#bbb'} />
+            </TouchableOpacity>
+            {/* Card content with tap to flip */}
+            <TouchableOpacity 
+              style={{ flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%' }} 
+              onPress={() => setFlipped(f => !f)} 
+              activeOpacity={0.9}
+            >
+              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                {!flipped ? (
+                  <Text style={styles.word}>{current.word}</Text>
+                ) : (
+                  <>
+                    <Text style={styles.definition}>{current.definition}</Text>
+                    {current.example && current.example.trim() && (
+                      <Text style={styles.example}>{current.example}</Text>
+                    )}
+                  </>
                 )}
-              </>
-            )}
+              </View>
+            </TouchableOpacity>
           </View>
-        </TouchableOpacity>
+        </PanGestureHandler>
       )}
       <View style={{ flexDirection: 'row', marginTop: 20 }}>
-        <TouchableOpacity onPress={() => setCurrentIdx(idx => (idx - 1 + items.length) % items.length)} style={{ marginHorizontal: 20 }}>
+        <TouchableOpacity onPress={() => {
+          const newIndex = (currentPosition - 1 + items.length) % items.length;
+          if (starredOnly) {
+            setStarredCurrentIdx(newIndex);
+            saveStarredPosition(newIndex);
+          } else {
+            setCurrentIdx(newIndex);
+            saveCurrentPosition(newIndex);
+          }
+        }} style={{ marginHorizontal: 20 }}>
           <Text style={{ fontSize: 36, color: '#007aff' }}>{'‹'}</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => setCurrentIdx(idx => (idx + 1) % items.length)} style={{ marginHorizontal: 20 }}>
+        <TouchableOpacity onPress={() => {
+          const newIndex = (currentPosition + 1) % items.length;
+          if (starredOnly) {
+            setStarredCurrentIdx(newIndex);
+            saveStarredPosition(newIndex);
+          } else {
+            setCurrentIdx(newIndex);
+            saveCurrentPosition(newIndex);
+          }
+        }} style={{ marginHorizontal: 20 }}>
           <Text style={{ fontSize: 36, color: '#007aff' }}>{'›'}</Text>
         </TouchableOpacity>
       </View>
-      <Text style={{ marginTop: 16, color: '#888' }}>Card {currentIdx + 1} of {items.length}</Text>
+      <Text style={{ marginTop: 16, color: '#888' }}>Card {currentPosition + 1} of {items.length}</Text>
     </SafeAreaView>
   );
 } 

@@ -4,6 +4,7 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -40,13 +41,15 @@ export default function RootLayout() {
   return (
     <ActionSheetProvider>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="set" />
-          <Stack.Screen name="+not-found" />
-        </Stack>
-        {/* The add set modal is removed as per the edit hint */}
-        <StatusBar style="auto" />
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="set" />
+            <Stack.Screen name="+not-found" />
+          </Stack>
+          {/* The add set modal is removed as per the edit hint */}
+          <StatusBar style="auto" />
+        </GestureHandlerRootView>
       </ThemeProvider>
     </ActionSheetProvider>
   );
