@@ -473,7 +473,6 @@ export default function SetPage() {
       
       // Store the raw parsed data
       setPendingImport(parsed.data);
-      console.log('Raw CSV data stored for import:', parsed.data.length, 'rows');
     }
     setImportLoading(false);
   };
@@ -505,7 +504,6 @@ export default function SetPage() {
     const processedItems = processCSVDataForImport(pendingImport, importHasHeader);
     
     if (processedItems.length === 0) {
-      console.log('No valid items found after processing');
       return;
     }
     
