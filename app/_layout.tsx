@@ -40,8 +40,9 @@ export default function RootLayout() {
   return (
     <ActionSheetProvider>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="set" />
           <Stack.Screen name="+not-found" />
         </Stack>
         {/* The add set modal is removed as per the edit hint */}
