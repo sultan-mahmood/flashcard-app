@@ -156,7 +156,7 @@ export default function FlashcardsScreen() {
         keyExtractor={item => item.id}
         contentContainerStyle={{ alignItems: 'flex-start', marginTop: 16 }}
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.setCard} onPress={() => router.push({ pathname: '/set/[id]', params: { id: item.id } })}>
+          <TouchableOpacity style={styles.setCard} onPress={() => router.push({ pathname: '/set/flashcard', params: { id: item.id } })}>
             <Text style={styles.setName}>{item.name}</Text>
             <Text style={styles.setCount}>{Array.isArray(item.items) ? item.items.length : 0} terms</Text>
           </TouchableOpacity>
