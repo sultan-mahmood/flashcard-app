@@ -10,8 +10,8 @@ import ActionSheet, { SheetManager } from 'react-native-actions-sheet';
 
 import type { DocumentPickerAsset } from 'expo-document-picker';
 
-// Card with word, definition, example
-export type Flashcard = {
+// Information item with word, definition, example
+export type Item = {
   word: string;
   definition: string;
   example: string;
@@ -20,7 +20,7 @@ export type Flashcard = {
 export type CardSet = {
   id: string;
   name: string;
-  cards: Flashcard[];
+  items: Item[];
 };
 
 const STORAGE_KEY = 'flashcardAppSets';
@@ -31,6 +31,8 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     backgroundColor: '#f5f5f5',
+    alignItems: 'flex-start',
+    justifyContent: 'flex-start',
   },
   title: {
     fontSize: 24,
@@ -231,17 +233,17 @@ export default function FlashcardsScreen() {
     }
   }, [sets, selectedSetId, loading]);
 
-  // Get selected set and cards
+  // Get selected set and items
   const selectedSet = sets.find(s => s.id === selectedSetId) || null;
-  const cards = selectedSet ? selectedSet.cards : [];
+  const items = selectedSet ? selectedSet.items : [];
 
-  // Filter cards if starredOnly
-  const displayCards = starredOnly ? cards.filter((_, idx) => bookmarks.includes(idx)) : cards;
+  // Filter items if starredOnly
+  const displayItems = starredOnly ? items.filter((_, idx) => bookmarks.includes(idx)) : items;
 
-  // When set changes, pick a random card
+  // When set changes, pick a random item
   useEffect(() => {
-    if (selectedSet && cards.length > 0) {
-      const available = cards.map((_, idx) => idx).filter(idx => !learned.includes(idx));
+    if (selectedSet && Array.isArray(items) && items.length > 0) {
+      const available = items.map((_, idx) => idx).filter(idx => !learned.includes(idx));
       if (available.length > 0) {
         const randomIdx = available[Math.floor(Math.random() * available.length)];
         setCurrentIdx(randomIdx);
@@ -257,19 +259,19 @@ export default function FlashcardsScreen() {
 
   // Next/Back navigation
   const goToNext = () => {
-    if (!displayCards.length) return;
+    if (!Array.isArray(displayItems) || displayItems.length === 0) return;
     if (currentIdx === null) return;
     let idx = currentIdx + 1;
-    if (idx >= displayCards.length) idx = 0;
+    if (idx >= (Array.isArray(displayItems) ? displayItems.length : 0)) idx = 0;
     setCurrentIdx(idx);
     setShowAnswer(false);
     setFlipped(false);
   };
   const goToPrev = () => {
-    if (!displayCards.length) return;
+    if (!Array.isArray(displayItems) || displayItems.length === 0) return;
     if (currentIdx === null) return;
     let idx = currentIdx - 1;
-    if (idx < 0) idx = displayCards.length - 1;
+    if (idx < 0) idx = (Array.isArray(displayItems) ? displayItems.length : 0) - 1;
     setCurrentIdx(idx);
     setShowAnswer(false);
     setFlipped(false);
@@ -329,10 +331,10 @@ export default function FlashcardsScreen() {
       const response = await fetch(asset.uri);
       const csv = await response.text();
       const parsed = Papa.parse(csv, { header: hasHeader });
-      let newCards: Flashcard[] = [];
+      let newItems: Item[] = [];
       if (hasHeader) {
         // Normalize keys in each row
-        newCards = parsed.data.map((row: any) => {
+        newItems = parsed.data.map((row: any) => {
           const norm: any = {};
           Object.keys(row).forEach(k => {
             norm[k.trim().toLowerCase()] = row[k];
@@ -342,9 +344,9 @@ export default function FlashcardsScreen() {
             definition: norm.definition || '',
             example: norm.example || ''
           };
-        }).filter(card => card && card.word && card.definition);
+        }).filter(item => item && item.word && item.definition);
       } else {
-        newCards = parsed.data
+        newItems = parsed.data
           .map((row: any) => {
             if (!Array.isArray(row) || row.length < 2) return null;
             return {
@@ -353,14 +355,14 @@ export default function FlashcardsScreen() {
               example: row[2] || ''
             };
           })
-          .filter((card): card is Flashcard => !!card && !!card.word && !!card.definition);
+          .filter((item): item is Item => !!item && !!item.word && !!item.definition);
       }
-      const existingWords = new Set(selectedSet.cards.map(card => card.word));
+      const existingWords = new Set(selectedSet.items.map(item => item.word));
       const merged = [
-        ...selectedSet.cards,
-        ...newCards.filter(card => !existingWords.has(card.word))
+        ...selectedSet.items,
+        ...newItems.filter(item => !existingWords.has(item.word))
       ];
-      setSets(sets.map(s => s.id === selectedSet.id ? { ...s, cards: merged } : s));
+      setSets(sets.map(s => s.id === selectedSet.id ? { ...s, items: merged } : s));
       setCurrentIdx(null);
       setShowAnswer(false);
       setFlipped(false);
@@ -390,7 +392,7 @@ export default function FlashcardsScreen() {
   // Pronounce word
   const pronounce = async () => {
     if (currentIdx === null) return;
-    const card = cards[currentIdx];
+    const item = items[currentIdx];
     try {
       await Audio.setAudioModeAsync({
         playsInSilentModeIOS: true,
@@ -406,7 +408,7 @@ export default function FlashcardsScreen() {
       // await sound.playAsync();
       // await sound.unloadAsync();
     } catch (e) {}
-    Speech.speak(card.word);
+    Speech.speak(item.word);
   };
 
   // Show bookmarks
@@ -422,7 +424,7 @@ export default function FlashcardsScreen() {
   const addSet = () => {
     if (!newSetName.trim()) return;
     const id = Date.now().toString();
-    setSets([...sets, { id, name: newSetName.trim(), cards: [] }]);
+    setSets([...sets, { id, name: newSetName.trim(), items: [] }]);
     setNewSetName('');
     setShowSetModal(false);
     setSelectedSetId(id);
@@ -493,26 +495,28 @@ export default function FlashcardsScreen() {
   if (!selectedSet) {
     // Show carousel of sets if no set is selected
     return (
-      <SafeAreaView style={[styles.container, { position: 'relative' }]}>
-        <Text style={styles.title}>Your Sets</Text>
+      <SafeAreaView style={[styles.container, { position: 'relative', alignItems: 'flex-start', justifyContent: 'flex-start' }]}> 
+        <View style={{ position: 'relative', width: '100%', marginBottom: 8, marginTop: 8, alignItems: 'center' }}>
+          <Text style={[styles.title, { textAlign: 'center', width: '100%' }]}>Your Sets</Text>
+          <TouchableOpacity onPress={() => setShowSetModal(true)} style={{ position: 'absolute', right: 0, top: 0, padding: 6 }}>
+            <Ionicons name="add" size={28} color="#007aff" />
+          </TouchableOpacity>
+        </View>
         <FlatList
           data={sets}
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
           keyExtractor={item => item.id}
-          contentContainerStyle={{ alignItems: 'center', flexGrow: 1, justifyContent: sets.length === 0 ? 'center' : 'flex-start' }}
+          contentContainerStyle={{ alignItems: 'flex-start', marginTop: 16 }}
           renderItem={({ item }) => (
             <TouchableOpacity style={styles.setCard} onPress={() => selectSet(item.id)}>
               <Text style={styles.setName}>{item.name}</Text>
-              <Text style={styles.setCount}>{item.cards.length} cards</Text>
+              <Text style={styles.setCount}>{Array.isArray(item.items) ? item.items.length : 0} terms</Text>
             </TouchableOpacity>
           )}
           ListEmptyComponent={<Text style={{ textAlign: 'center', color: '#888', marginTop: 40 }}>No sets yet. Tap + to create your first set.</Text>}
         />
-        <TouchableOpacity style={[styles.fab, { top: 32, right: 32, bottom: undefined, backgroundColor: 'red', borderWidth: 2, borderColor: 'yellow', zIndex: 100, position: 'absolute' }]} onPress={() => setShowSetModal(true)}>
-          <Ionicons name="add" size={36} color="#fff" />
-        </TouchableOpacity>
         <Modal visible={showSetModal} animationType="slide" transparent>
           <View style={styles.modalBg}>
             <View style={styles.modalContent}>
@@ -564,7 +568,7 @@ export default function FlashcardsScreen() {
         </View>
       )}
       {/* Flashcard carousel */}
-      {currentIdx !== null && displayCards.length > 0 && displayCards[currentIdx] && (
+      {currentIdx !== null && Array.isArray(displayItems) && displayItems.length > 0 && displayItems[currentIdx] && (
         <View {...panResponder.panHandlers} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
           <TouchableOpacity onPress={goToPrev} style={{ padding: 16 }}>
             <Text style={{ fontSize: 36, color: '#007aff' }}>{'‹'}</Text>
@@ -581,12 +585,12 @@ export default function FlashcardsScreen() {
             <TouchableOpacity style={styles.card} onPress={flipCard} activeOpacity={0.9}>
               {!flipped ? (
                 <View style={{ alignItems: 'center' }}>
-                  <Text style={styles.word}>{displayCards[currentIdx].word}</Text>
+                  <Text style={styles.word}>{displayItems[currentIdx].word}</Text>
                 </View>
               ) : (
                 <View style={{ alignItems: 'center' }}>
-                  <Text style={styles.definition}>{displayCards[currentIdx].definition}</Text>
-                  <Text style={styles.example}>{displayCards[currentIdx].example}</Text>
+                  <Text style={styles.definition}>{displayItems[currentIdx].definition}</Text>
+                  <Text style={styles.example}>{displayItems[currentIdx].example}</Text>
                 </View>
               )}
             </TouchableOpacity>
@@ -597,7 +601,7 @@ export default function FlashcardsScreen() {
         </View>
       )}
       <View style={{ margin: 20 }}>
-        <Text>Cards: {cards.length}</Text>
+        <Text>Terms: {Array.isArray(items) ? items.length : 0}</Text>
         <Text>Learned: {learned.length}</Text>
         <Text>Bookmarks: {bookmarks.length}</Text>
       </View>
