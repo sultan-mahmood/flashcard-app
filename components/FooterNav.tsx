@@ -73,8 +73,8 @@ export default function FooterNav({ showHome = true, showBack = false, onBackPre
               minWidth: 60
             }}
           >
-            <IconSymbol size={20} name="house.fill" color={Colors[colorScheme ?? 'light'].tint} />
-            <Text style={{ color: Colors[colorScheme ?? 'light'].tint, fontSize: 10, fontWeight: '600', marginTop: 2 }}>Home</Text>
+            <IconSymbol size={20} name="house.fill" color="#007aff" />
+            <Text style={{ color: '#007aff', fontSize: 10, fontWeight: '600', marginTop: 2 }}>Home</Text>
           </TouchableOpacity>
         )}
       </View>

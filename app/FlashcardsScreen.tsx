@@ -252,7 +252,7 @@ export default function FlashcardsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={{ position: 'relative', width: '100%', marginBottom: 16, marginTop: 16, alignItems: 'center' }}>
+      <View style={{ position: 'relative', width: '100%', marginBottom: 32, marginTop: 16, alignItems: 'center' }}>
         {isDeleteMode ? (
           <TouchableOpacity onPress={exitDeleteMode} style={{ position: 'absolute', right: 20, top: 0, padding: 12, minWidth: 44, minHeight: 44, justifyContent: 'center', alignItems: 'center' }}>
             <Text style={{ color: '#007aff', fontSize: 18, fontWeight: '600' }}>Done</Text>
