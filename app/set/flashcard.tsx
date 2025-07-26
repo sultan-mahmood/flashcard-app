@@ -9,6 +9,7 @@ import { Button, Modal, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpac
 import ActionSheet, { SheetManager } from 'react-native-actions-sheet';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 
+import FooterNav from '../../components/FooterNav';
 import type { CardSet, Item } from '../FlashcardsScreen';
 
 export const options = {
@@ -694,7 +695,7 @@ export default function SetPage() {
                   <>
                     <Text style={styles.definition}>{current.definition}</Text>
                     {current.example && current.example.trim() && (
-                      <Text style={styles.example}>{current.example}</Text>
+                      <Text style={styles.example}>Example: {current.example}</Text>
                     )}
                   </>
                 )}
@@ -703,7 +704,7 @@ export default function SetPage() {
           </View>
         </PanGestureHandler>
       )}
-      <View style={{ flexDirection: 'row', marginTop: 20 }}>
+      <View style={{ flexDirection: 'row', marginTop: 20, alignItems: 'center', justifyContent: 'space-between' }}>
         <TouchableOpacity onPress={() => {
           const newIndex = (currentPosition - 1 + items.length) % items.length;
           if (starredOnly) {
@@ -716,6 +717,7 @@ export default function SetPage() {
         }} style={{ marginHorizontal: 20 }}>
           <Text style={{ fontSize: 36, color: '#007aff' }}>{'‹'}</Text>
         </TouchableOpacity>
+        <Text style={{ color: '#888', fontSize: 16 }}>{currentPosition + 1} of {items.length}</Text>
         <TouchableOpacity onPress={() => {
           const newIndex = (currentPosition + 1) % items.length;
           if (starredOnly) {
@@ -729,7 +731,9 @@ export default function SetPage() {
           <Text style={{ fontSize: 36, color: '#007aff' }}>{'›'}</Text>
         </TouchableOpacity>
       </View>
-      <Text style={{ marginTop: 16, color: '#888' }}>Card {currentPosition + 1} of {items.length}</Text>
+      
+      {/* Bottom Navigation */}
+      <FooterNav />
     </SafeAreaView>
   );
 } 

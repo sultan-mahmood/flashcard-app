@@ -84,6 +84,7 @@ export default function FlashcardsScreen() {
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [setToDelete, setSetToDelete] = useState<CardSet | null>(null);
   const [isDeleteMode, setIsDeleteMode] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -94,12 +95,27 @@ export default function FlashcardsScreen() {
           const parsed = JSON.parse(data);
           setSets(parsed.sets || []);
         }
-      } catch (e) {}
+        setIsInitialized(true);
+      } catch (e) {
+        setIsInitialized(true);
+      }
     })();
   }, []);
 
   useEffect(() => {
-    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ sets }));
+    (async () => {
+      try {
+        // Don't save until component is initialized
+        if (!isInitialized) {
+          return;
+        }
+        
+        const dataToSave = JSON.stringify({ sets });
+        await AsyncStorage.setItem(STORAGE_KEY, dataToSave);
+      } catch (e) {
+        console.error('Error saving sets to storage:', e);
+      }
+    })();
   }, [sets]);
 
   // Refresh sets when screen comes back into focus (e.g., after deleting a set)
@@ -112,7 +128,9 @@ export default function FlashcardsScreen() {
             const parsed = JSON.parse(data);
             setSets(parsed.sets || []);
           }
-        } catch (e) {}
+        } catch (e) {
+          console.error('Error loading sets from storage:', e);
+        }
       })();
     }, [])
   );
@@ -234,13 +252,29 @@ export default function FlashcardsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={{ position: 'relative', width: '100%', marginBottom: 8, marginTop: 8, alignItems: 'center' }}>
+      <View style={{ position: 'relative', width: '100%', marginBottom: 16, marginTop: 16, alignItems: 'center' }}>
         {isDeleteMode ? (
-          <TouchableOpacity onPress={exitDeleteMode} style={{ position: 'absolute', right: 0, top: 0, padding: 6 }}>
+          <TouchableOpacity onPress={exitDeleteMode} style={{ position: 'absolute', right: 20, top: 0, padding: 12, minWidth: 44, minHeight: 44, justifyContent: 'center', alignItems: 'center' }}>
             <Text style={{ color: '#007aff', fontSize: 18, fontWeight: '600' }}>Done</Text>
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity onPress={() => setShowAddSetModal(true)} style={{ position: 'absolute', right: 0, top: 0, padding: 6 }}>
+          <TouchableOpacity 
+            onPress={() => setShowAddSetModal(true)} 
+            style={{ 
+              position: 'absolute', 
+              right: 20, 
+              top: 0, 
+              width: 44, 
+              height: 44, 
+              justifyContent: 'center', 
+              alignItems: 'center',
+              backgroundColor: 'rgba(0, 122, 255, 0.1)',
+              borderRadius: 22,
+              zIndex: 1000,
+              elevation: 10
+            }}
+            activeOpacity={0.7}
+          >
             <Ionicons name="add" size={28} color="#007aff" />
           </TouchableOpacity>
         )}
