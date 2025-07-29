@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as DocumentPicker from 'expo-document-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -88,6 +87,29 @@ const styles = StyleSheet.create({
     padding: 20,
     width: '80%',
     alignItems: 'center',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    backgroundColor: '#f5f5f5',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    paddingTop: Platform.OS === 'ios' ? 50 : 20,
+  },
+  backButton: {
+    padding: 8,
+  },
+  menuButton: {
+    padding: 8,
   },
 });
 
@@ -270,12 +292,13 @@ export default function SetPage() {
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
         {/* Simple Navigation Bar */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%', paddingHorizontal: 20, paddingVertical: 15, backgroundColor: '#f5f5f5', borderBottomWidth: 1, borderBottomColor: '#e0e0e0', position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1000, paddingTop: Platform.OS === 'ios' ? 50 : 20 }}>
-          <TouchableOpacity onPress={() => router.back()} style={{ padding: 8 }}>
-            <Ionicons name="chevron-back" size={28} color="#333" />
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Icon name="chevron-back" size={28} color="#333" />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => {}} style={{ padding: 8 }}>
-            <Ionicons name="ellipsis-horizontal" size={30} color="#333" />
+          <View style={{ flex: 1 }} />
+          <TouchableOpacity onPress={() => SheetManager.show('set-menu')} style={styles.menuButton}>
+            <Icon name="ellipsis-horizontal" size={30} color="#333" />
           </TouchableOpacity>
         </View>
         {/* Set Name */}
@@ -539,12 +562,13 @@ export default function SetPage() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
       {/* Simple Navigation Bar */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%', paddingHorizontal: 20, paddingVertical: 15, backgroundColor: '#f5f5f5', borderBottomWidth: 1, borderBottomColor: '#e0e0e0', position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1000, paddingTop: Platform.OS === 'ios' ? 50 : 20 }}>
-        <TouchableOpacity onPress={() => router.back()} style={{ padding: 8 }}>
-          <Ionicons name="chevron-back" size={28} color="#333" />
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Icon name="chevron-back" size={28} color="#333" />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => SheetManager.show('set-menu')} style={{ padding: 8 }}>
-          <Ionicons name="ellipsis-horizontal" size={30} color="#333" />
+        <View style={{ flex: 1 }} />
+        <TouchableOpacity onPress={() => SheetManager.show('set-menu')} style={styles.menuButton}>
+          <Icon name="ellipsis-horizontal" size={30} color="#333" />
         </TouchableOpacity>
       </View>
       {/* Set Name */}

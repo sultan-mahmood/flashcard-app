@@ -1,10 +1,10 @@
-import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { FlatList, Platform, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import FooterNav from '../../components/FooterNav';
+import Icon from '../../components/Icon';
 import type { CardSet } from '../FlashcardsScreen';
 
 const STORAGE_KEY = 'flashcardAppSets';
@@ -139,7 +139,7 @@ export default function SetListPage() {
         <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={28} color="#333" />
+            <Icon name="chevron-back" size={28} color="#333" />
           </TouchableOpacity>
           <View style={{ flex: 1 }} />
           <View style={{ width: 44 }} />
@@ -155,10 +155,10 @@ export default function SetListPage() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={28} color="#333" />
-        </TouchableOpacity>
+              <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Icon name="chevron-back" size={28} color="#333" />
+          </TouchableOpacity>
         <View style={{ flex: 1 }} />
         <TouchableOpacity onPress={handleStartStudy} style={styles.startStudyButton}>
           <Text style={styles.startStudyText}>Start Study</Text>

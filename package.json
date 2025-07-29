@@ -5,9 +5,11 @@
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
-    "android": "expo run:android",
-    "ios": "expo run:ios",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
     "web": "expo start --web",
+    "build:web": "npx expo export --platform web && cp -r assets dist/ && sed -i '' 's|<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"/>|<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"/><link rel=\"icon\" type=\"image/png\" href=\"/assets/images/favicon.png\"/><link rel=\"apple-touch-icon\" href=\"/assets/images/icon.png\"/>|g' dist/*.html",
+    "deploy:firebase": "npm run build:web && firebase deploy --only hosting",
     "lint": "expo lint"
   },
   "dependencies": {

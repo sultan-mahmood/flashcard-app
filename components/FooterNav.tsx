@@ -1,11 +1,10 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { Platform, Text, TouchableOpacity, View } from 'react-native';
 
-import { Colors } from '../constants/Colors';
-import { useColorScheme } from '../hooks/useColorScheme';
-import { IconSymbol } from './ui/IconSymbol';
+import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
+import Icon from './Icon';
 import TabBarBackground from './ui/TabBarBackground';
 
 interface FooterNavProps {
@@ -60,7 +59,7 @@ export default function FooterNav({ showHome = true, showBack = false, onBackPre
               minWidth: 60
             }}
           >
-            <Ionicons name="chevron-back" size={20} color={Colors[colorScheme ?? 'light'].tint} />
+            <Icon name="chevron-back" size={20} color={Colors[colorScheme ?? 'light'].tint} />
             <Text style={{ color: Colors[colorScheme ?? 'light'].tint, fontSize: 10, fontWeight: '600', marginTop: 2 }}>Back</Text>
           </TouchableOpacity>
         )}
@@ -73,7 +72,7 @@ export default function FooterNav({ showHome = true, showBack = false, onBackPre
               minWidth: 60
             }}
           >
-            <IconSymbol size={20} name="house.fill" color="#007aff" />
+            <Icon size={20} name="house.fill" color="#007aff" />
             <Text style={{ color: '#007aff', fontSize: 10, fontWeight: '600', marginTop: 2 }}>Home</Text>
           </TouchableOpacity>
         )}
