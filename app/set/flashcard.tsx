@@ -5,7 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Speech from 'expo-speech';
 import Papa from 'papaparse';
 import React, { useEffect, useState } from 'react';
-import { Button, Modal, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Button, Modal, Platform, SafeAreaView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import ActionSheet, { SheetManager } from 'react-native-actions-sheet';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 
@@ -268,8 +268,9 @@ export default function SetPage() {
   if (!set) {
     return (
       <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
         {/* Simple Navigation Bar */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%', paddingHorizontal: 20, paddingVertical: 15, backgroundColor: '#f5f5f5', borderBottomWidth: 1, borderBottomColor: '#e0e0e0', position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1000, paddingTop: 50 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%', paddingHorizontal: 20, paddingVertical: 15, backgroundColor: '#f5f5f5', borderBottomWidth: 1, borderBottomColor: '#e0e0e0', position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1000, paddingTop: Platform.OS === 'ios' ? 50 : 20 }}>
           <TouchableOpacity onPress={() => router.back()} style={{ padding: 8 }}>
             <Ionicons name="chevron-back" size={28} color="#333" />
           </TouchableOpacity>
@@ -278,7 +279,7 @@ export default function SetPage() {
           </TouchableOpacity>
         </View>
         {/* Set Name */}
-        <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 20, color: '#333', textAlign: 'center', backgroundColor: 'red', padding: 10, marginTop: 120 }}>
+        <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 20, color: '#333', textAlign: 'center', backgroundColor: 'red', padding: 10, marginTop: Platform.OS === 'ios' ? 120 : 100 }}>
           Loading set...
         </Text>
       </SafeAreaView>
@@ -536,8 +537,9 @@ export default function SetPage() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
       {/* Simple Navigation Bar */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%', paddingHorizontal: 20, paddingVertical: 15, backgroundColor: '#f5f5f5', borderBottomWidth: 1, borderBottomColor: '#e0e0e0', position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1000, paddingTop: 50 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%', paddingHorizontal: 20, paddingVertical: 15, backgroundColor: '#f5f5f5', borderBottomWidth: 1, borderBottomColor: '#e0e0e0', position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1000, paddingTop: Platform.OS === 'ios' ? 50 : 20 }}>
         <TouchableOpacity onPress={() => router.back()} style={{ padding: 8 }}>
           <Ionicons name="chevron-back" size={28} color="#333" />
         </TouchableOpacity>
@@ -546,7 +548,7 @@ export default function SetPage() {
         </TouchableOpacity>
       </View>
       {/* Set Name */}
-      <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 10, color: '#333', textAlign: 'center', marginTop: 80 }}>
+      <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 10, color: '#333', textAlign: 'center', marginTop: Platform.OS === 'ios' ? 80 : 60 }}>
         {set ? set.name : 'Loading...'}
       </Text>
       {starredOnly && (
