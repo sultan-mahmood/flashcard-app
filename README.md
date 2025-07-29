@@ -1,50 +1,129 @@
-# Welcome to your Expo app 👋
+# BrainDash - Flashcard Learning App 🧠
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A modern, cross-platform flashcard application built with React Native and Expo. BrainDash helps you create, organize, and study flashcards for effective learning.
 
-## Get started
+## Features
 
-1. Install dependencies
+- 📱 **Cross-platform**: Works on iOS, Android, and Web
+- 🎯 **Smart Learning**: Create and organize flashcards by sets
+- 🎨 **Modern UI**: Clean, intuitive interface with smooth animations
+- 📊 **Progress Tracking**: Monitor your learning progress
+- 🔄 **Offline Support**: Study without internet connection
+- 🌐 **Web Version**: Access your flashcards from any browser
 
+## Screenshots
+
+*Add screenshots of your app here*
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js (v16 or higher)
+- npm or yarn
+- Expo CLI
+- iOS Simulator (for iOS development)
+- Android Studio (for Android development)
+
+### Installation
+
+1. **Clone the repository**
    ```bash
-   npm install
+   git clone https://github.com/yourusername/brain-dash.git
+   cd brain-dash
    ```
 
-2. Start the app
+2. **Install dependencies**
+   ```bash
+   npm install
+   # or
+   yarn install
+   ```
 
+3. **Start the development server**
    ```bash
    npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+## Usage
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+### Development
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+- **iOS Simulator**: Press `i` in the terminal or scan QR code
+- **Android Emulator**: Press `a` in the terminal or scan QR code
+- **Web Browser**: Press `w` in the terminal or visit `http://localhost:8081`
+- **Physical Device**: Scan the QR code with Expo Go app
 
-## Get a fresh project
+### Building for Production
 
-When you're ready, run:
-
+#### Web Version (No Developer Account Required)
 ```bash
-npm run reset-project
+npx expo export --platform web
+cd dist
+python3 -m http.server 8000
+```
+Then visit `http://localhost:8000` in your browser.
+
+#### iOS App
+```bash
+npx expo run:ios
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+#### Android App
+```bash
+npx expo run:android
+```
 
-## Learn more
+## Project Structure
 
-To learn more about developing your project with Expo, look at the following resources:
+```
+brain-dash/
+├── app/                 # Main application screens
+│   ├── (tabs)/         # Tab navigation screens
+│   ├── set/            # Flashcard set screens
+│   └── _layout.tsx     # Root layout
+├── components/          # Reusable UI components
+├── constants/           # App constants and configuration
+├── hooks/              # Custom React hooks
+├── store/              # State management
+└── assets/             # Images, fonts, and static files
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Technologies Used
 
-## Join the community
+- **React Native**: Cross-platform mobile development
+- **Expo**: Development platform and tools
+- **Expo Router**: File-based navigation
+- **TypeScript**: Type-safe JavaScript
+- **React Native Reanimated**: Smooth animations
+- **AsyncStorage**: Local data persistence
 
-Join our community of developers creating universal apps.
+## Contributing
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Support
+
+If you encounter any issues or have questions:
+
+1. Check the [Expo documentation](https://docs.expo.dev/)
+2. Search existing [GitHub issues](https://github.com/yourusername/brain-dash/issues)
+3. Create a new issue with detailed information
+
+## Acknowledgments
+
+- Built with [Expo](https://expo.dev)
+- Icons and design inspiration from the React Native community
+- Special thanks to all contributors and users
+
+---
+
+Made with ❤️ for effective learning

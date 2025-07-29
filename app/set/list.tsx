@@ -137,9 +137,7 @@ export default function SetListPage() {
     router.push({ pathname: '/set/flashcard', params: { id: id as string } });
   };
 
-  const handleGoHome = () => {
-    router.push('/');
-  };
+
 
   if (!set) {
     return (

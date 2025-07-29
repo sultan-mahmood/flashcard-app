@@ -96,7 +96,7 @@ export default function FlashcardsScreen() {
           setSets(parsed.sets || []);
         }
         setIsInitialized(true);
-      } catch (e) {
+      } catch (error) {
         setIsInitialized(true);
       }
     })();
@@ -116,7 +116,7 @@ export default function FlashcardsScreen() {
         console.error('Error saving sets to storage:', e);
       }
     })();
-  }, [sets]);
+  }, [sets, isInitialized]);
 
   // Refresh sets when screen comes back into focus (e.g., after deleting a set)
   useFocusEffect(
@@ -194,11 +194,6 @@ export default function FlashcardsScreen() {
     setShowAddSetModal(false);
     setNewSetName('');
     setPendingItems(null);
-  };
-
-  const handleLongPress = (set: CardSet) => {
-    setSetToDelete(set);
-    setDeleteModalVisible(true);
   };
 
   const enterDeleteMode = () => {
@@ -429,7 +424,7 @@ export default function FlashcardsScreen() {
           <View style={styles.importModalContent}>
             <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 12, color: '#d00' }}>Delete Set</Text>
             <Text style={{ fontSize: 16, marginBottom: 20, textAlign: 'center' }}>
-              Are you sure you want to delete "{setToDelete?.name}"?
+              Are you sure you want to delete &quot;{setToDelete?.name}&quot;?
             </Text>
             <Text style={{ fontSize: 14, color: '#666', marginBottom: 20, textAlign: 'center' }}>
               This action cannot be undone. All progress and starred items will be lost.

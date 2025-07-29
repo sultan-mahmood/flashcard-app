@@ -98,8 +98,7 @@ export default function SetPage() {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [bookmarks, setBookmarks] = useState<number[]>([]);
-  const [learned, setLearned] = useState<number[]>([]);
-  const [menuVisible, setMenuVisible] = useState(false);
+
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [importModalVisible, setImportModalVisible] = useState(false);
   const [editName, setEditName] = useState('');
@@ -144,15 +143,12 @@ export default function SetPage() {
             const currentPositionKey = `current_position_${id}`;
             
             const bookmarksData = await AsyncStorage.getItem(bookmarksKey);
-            const learnedData = await AsyncStorage.getItem(learnedKey);
             const currentPositionData = await AsyncStorage.getItem(currentPositionKey);
             
             if (bookmarksData) {
               setBookmarks(JSON.parse(bookmarksData));
             }
-            if (learnedData) {
-              setLearned(JSON.parse(learnedData));
-            }
+
             if (currentPositionData) {
               setCurrentIdx(JSON.parse(currentPositionData));
             }
@@ -190,15 +186,7 @@ export default function SetPage() {
     }
   };
 
-  // Save learned states to AsyncStorage whenever they change
-  const saveLearned = async (newLearned: number[]) => {
-    try {
-      const learnedKey = `learned_${id}`;
-      await AsyncStorage.setItem(learnedKey, JSON.stringify(newLearned));
-    } catch (error) {
-      console.error('Error saving learned states:', error);
-    }
-  };
+
 
   // Save current position to AsyncStorage
   const saveCurrentPosition = async (position: number) => {
@@ -393,7 +381,6 @@ export default function SetPage() {
         // Don't reset position if starred items already exist
       }
     } else if (action === 'reset') {
-      setLearned([]);
       setBookmarks([]);
       setStarredOnly(false);
       setCurrentIdx(0);
@@ -545,9 +532,7 @@ export default function SetPage() {
     setPendingImport([]);
   };
 
-  const openMenu = () => {
-    SheetManager.show('set-menu');
-  };
+
 
   return (
     <SafeAreaView style={styles.container}>

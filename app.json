@@ -1,23 +1,24 @@
 {
   "expo": {
-    "name": "flashcard-expo-app",
-    "slug": "flashcard-expo-app",
+    "name": "BrainDash",
+    "slug": "braindash",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "flashcardexpoapp",
+    "scheme": "braindash",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.flashcard-expo-app"
+      "bundleIdentifier": "com.braindash.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.braindash.app"
     },
     "web": {
       "bundler": "metro",
@@ -38,6 +39,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "bc0f9e4a-d669-41ce-8a57-1e93fe00b240"
+      }
     }
   }
 }
