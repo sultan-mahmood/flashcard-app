@@ -25,13 +25,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e0e0e0',
     paddingTop: Platform.OS === 'ios' ? 20 : 10,
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    flex: 1,
-    textAlign: 'center',
-  },
+
   backButton: {
     padding: 8,
   },
@@ -147,7 +141,7 @@ export default function SetListPage() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="chevron-back" size={28} color="#333" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Loading...</Text>
+          <View style={{ flex: 1 }} />
           <View style={{ width: 44 }} />
         </View>
         <View style={styles.loadingContainer}>
@@ -165,7 +159,7 @@ export default function SetListPage() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="chevron-back" size={28} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{set.name}</Text>
+        <View style={{ flex: 1 }} />
         <TouchableOpacity onPress={handleStartStudy} style={styles.startStudyButton}>
           <Text style={styles.startStudyText}>Start Study</Text>
         </TouchableOpacity>
@@ -174,20 +168,31 @@ export default function SetListPage() {
       {/* Content */}
       <View style={[styles.content, { paddingBottom: 50 }]}>
         <FlatList
-          data={set.items}
-          keyExtractor={(item, index) => `${item.word}-${index}`}
-          renderItem={({ item, index }) => (
-            <View style={styles.itemCard}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
-                <Text style={styles.itemWord}>{item.word}</Text>
-                <Text style={styles.itemNumber}>{index + 1}</Text>
+          data={[{ type: 'header', name: set.name } as any, ...set.items]}
+          keyExtractor={(item: any, index) => item.type === 'header' ? 'header' : `${item.word}-${index}`}
+          renderItem={({ item, index }: { item: any; index: number }) => {
+            if (item.type === 'header') {
+              return (
+                <View style={{ paddingHorizontal: 20, paddingVertical: 20, marginBottom: 20 }}>
+                  <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#333', textAlign: 'center' }}>
+                    {item.name}
+                  </Text>
+                </View>
+              );
+            }
+            return (
+              <View style={styles.itemCard}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                  <Text style={styles.itemWord}>{item.word}</Text>
+                  <Text style={styles.itemNumber}>{index}</Text>
+                </View>
+                <Text style={styles.itemDefinition}>{item.definition}</Text>
+                {item.example && item.example.trim() && (
+                  <Text style={styles.itemExample}>Example: {item.example}</Text>
+                )}
               </View>
-              <Text style={styles.itemDefinition}>{item.definition}</Text>
-              {item.example && item.example.trim() && (
-                <Text style={styles.itemExample}>Example: {item.example}</Text>
-              )}
-            </View>
-          )}
+            );
+          }}
           showsVerticalScrollIndicator={false}
         />
       </View>

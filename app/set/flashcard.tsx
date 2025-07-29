@@ -279,7 +279,7 @@ export default function SetPage() {
           </TouchableOpacity>
         </View>
         {/* Set Name */}
-        <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 20, color: '#333', textAlign: 'center', backgroundColor: 'red', padding: 10, marginTop: Platform.OS === 'ios' ? 120 : 100 }}>
+        <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 20, color: '#333', textAlign: 'center', backgroundColor: 'red', padding: 10, marginTop: Platform.OS === 'ios' ? 170 : 150 }}>
           Loading set...
         </Text>
       </SafeAreaView>
@@ -548,7 +548,7 @@ export default function SetPage() {
         </TouchableOpacity>
       </View>
       {/* Set Name */}
-      <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 10, color: '#333', textAlign: 'center', marginTop: Platform.OS === 'ios' ? 80 : 60 }}>
+      <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 10, color: '#333', textAlign: 'center', marginTop: Platform.OS === 'ios' ? 130 : 110 }}>
         {set ? set.name : 'Loading...'}
       </Text>
       {starredOnly && (
