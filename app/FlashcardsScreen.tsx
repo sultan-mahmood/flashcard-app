@@ -1,12 +1,12 @@
-import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as DocumentPicker from 'expo-document-picker';
-import { useFocusEffect, useRouter } from 'expo-router';
+// import { useRouter } from 'expo-router'; // Removed - component is used as child
 import Papa from 'papaparse';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button, FlatList, Modal, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import type { DocumentPickerAsset } from 'expo-document-picker';
+import Icon from '../components/Icon';
 
 export type Item = {
   word: string;
@@ -74,7 +74,11 @@ const styles = StyleSheet.create({
   },
 });
 
-export default function FlashcardsScreen() {
+interface FlashcardsScreenProps {
+  onNavigateToSet?: (setId: string) => void;
+}
+
+export default function FlashcardsScreen({ onNavigateToSet }: FlashcardsScreenProps = {}) {
   const [sets, setSets] = useState<CardSet[]>([]);
   const [showAddSetModal, setShowAddSetModal] = useState(false);
   const [newSetName, setNewSetName] = useState('');
@@ -85,7 +89,7 @@ export default function FlashcardsScreen() {
   const [setToDelete, setSetToDelete] = useState<CardSet | null>(null);
   const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
-  const router = useRouter();
+  // const router = useRouter(); // Removed - component is used as child
 
   useEffect(() => {
     (async () => {
@@ -118,22 +122,8 @@ export default function FlashcardsScreen() {
     })();
   }, [sets, isInitialized]);
 
-  // Refresh sets when screen comes back into focus (e.g., after deleting a set)
-  useFocusEffect(
-    useCallback(() => {
-      (async () => {
-        try {
-          const data = await AsyncStorage.getItem(STORAGE_KEY);
-          if (data) {
-            const parsed = JSON.parse(data);
-            setSets(parsed.sets || []);
-          }
-        } catch (e) {
-          console.error('Error loading sets from storage:', e);
-        }
-      })();
-    }, [])
-  );
+  // Note: useFocusEffect removed - this component is used as a child component
+  // Focus effect logic should be handled by the parent screen component
 
   const handlePickCSV = async () => {
     setCsvLoading(true);
@@ -270,7 +260,7 @@ export default function FlashcardsScreen() {
             }}
             activeOpacity={0.7}
           >
-            <Ionicons name="add" size={28} color="#007aff" />
+            <Icon name="add" size={28} color="#007aff" />
           </TouchableOpacity>
         )}
       </View>
@@ -294,7 +284,9 @@ export default function FlashcardsScreen() {
                 if (isDeleteMode) {
                   exitDeleteMode();
                 } else {
-                  router.push({ pathname: '/set', params: { id: item.id } });
+                  if (onNavigateToSet) {
+                    onNavigateToSet(item.id);
+                  }
                 }
               }}
               onLongPress={() => {
@@ -337,7 +329,7 @@ export default function FlashcardsScreen() {
         )}
         ListEmptyComponent={
           <View style={{ alignItems: 'center', justifyContent: 'flex-start', paddingHorizontal: 20, width: '100%', flex: 1 }}>
-            <Ionicons name="library-outline" size={64} color="#ccc" style={{ marginBottom: 16 }} />
+            <Icon name="library-outline" size={64} color="#ccc" style={{ marginBottom: 16 }} />
             <Text style={{ fontSize: 18, fontWeight: '600', color: '#666', marginBottom: 8, textAlign: 'center', maxWidth: 280 }}>
               Welcome to Flashcard App!
             </Text>
@@ -355,7 +347,7 @@ export default function FlashcardsScreen() {
                 alignItems: 'center'
               }}
             >
-              <Ionicons name="add" size={20} color="white" style={{ marginRight: 8 }} />
+              <Icon name="add" size={20} color="white" style={{ marginRight: 8 }} />
               <Text style={{ color: 'white', fontWeight: '600', fontSize: 16 }}>Create Your First Set</Text>
             </TouchableOpacity>
           </View>
@@ -383,7 +375,7 @@ export default function FlashcardsScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 12 }}>
               <Text>File has header row</Text>
               <TouchableOpacity onPress={() => setImportHasHeader(h => !h)} style={{ marginLeft: 8 }}>
-                <Ionicons name={importHasHeader ? 'checkbox' : 'square-outline'} size={24} color="#007aff" />
+                <Icon name={importHasHeader ? 'checkbox' : 'square-outline'} size={24} color="#007aff" />
               </TouchableOpacity>
             </View>
             

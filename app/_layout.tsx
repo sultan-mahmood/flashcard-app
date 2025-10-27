@@ -7,7 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { ActionSheetProvider } from '@expo/react-native-action-sheet';
+// import { ActionSheetProvider } from '@expo/react-native-action-sheet'; // Removed - no longer using ActionSheet
 import React from 'react';
 
 export default function RootLayout() {
@@ -38,19 +38,17 @@ export default function RootLayout() {
   }
 
   return (
-    <ActionSheetProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <GestureHandlerRootView style={{ flex: 1 }}>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="set" />
-            <Stack.Screen name="+not-found" />
-          </Stack>
-          {/* The add set modal is removed as per the edit hint */}
-          <StatusBar style="auto" />
-        </GestureHandlerRootView>
-      </ThemeProvider>
-    </ActionSheetProvider>
+    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="set" />
+          <Stack.Screen name="+not-found" />
+        </Stack>
+        {/* The add set modal is removed as per the edit hint */}
+        <StatusBar style="auto" />
+      </GestureHandlerRootView>
+    </ThemeProvider>
   );
 }
 

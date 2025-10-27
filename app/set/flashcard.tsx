@@ -4,11 +4,12 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Speech from 'expo-speech';
 import Papa from 'papaparse';
 import React, { useEffect, useState } from 'react';
-import { Button, Modal, Platform, SafeAreaView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import ActionSheet, { SheetManager } from 'react-native-actions-sheet';
+import { Button, Modal, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+// import ActionSheet, { SheetManager } from 'react-native-actions-sheet'; // Temporarily disabled to fix NavigationContent error
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 
 import FooterNav from '../../components/FooterNav';
+import Icon from '../../components/Icon';
 import type { CardSet, Item } from '../FlashcardsScreen';
 
 export const options = {
@@ -20,14 +21,15 @@ const STORAGE_KEY = 'flashcardAppSets';
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
     backgroundColor: '#f5f5f5',
-    alignItems: 'center',
+    alignItems: 'stretch',
     justifyContent: 'flex-start',
   },
   card: {
-    width: '90%',
-    height: 300,
+    width: '100%',
+    minHeight: 300,
     backgroundColor: '#fff',
     borderRadius: 8,
     padding: 36,
@@ -37,10 +39,11 @@ const styles = StyleSheet.create({
     shadowRadius: 24,
     elevation: 14,
     marginTop: 20,
-    alignItems: 'center',
+    alignItems: 'stretch',
     borderWidth: 1.5,
     borderColor: '#e0e0e0',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
+    flexShrink: 1,
   },
   word: {
     fontSize: 28,
@@ -50,8 +53,8 @@ const styles = StyleSheet.create({
     fontFamily: 'System',
     letterSpacing: 1.2,
     textAlign: 'center',
-    alignSelf: 'center',
-    flex: 0,
+    width: '100%',
+    flexWrap: 'wrap',
   },
   definition: {
     fontSize: 18,
@@ -61,8 +64,8 @@ const styles = StyleSheet.create({
     fontFamily: 'System',
     letterSpacing: 0.8,
     textAlign: 'center',
-    maxWidth: 320,
-    alignSelf: 'center',
+    width: '100%',
+    flexWrap: 'wrap',
   },
   example: {
     fontSize: 16,
@@ -72,8 +75,8 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontFamily: 'System',
     opacity: 0.85,
-    maxWidth: 320,
-    alignSelf: 'center',
+    width: '100%',
+    flexWrap: 'wrap',
   },
   importModalBg: {
     flex: 1,
@@ -123,6 +126,7 @@ export default function SetPage() {
 
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [importModalVisible, setImportModalVisible] = useState(false);
+  const [showMenuModal, setShowMenuModal] = useState(false);
   const [editName, setEditName] = useState('');
   const [importHasHeader, setImportHasHeader] = useState(true);
   const [importLoading, setImportLoading] = useState(false);
@@ -297,7 +301,7 @@ export default function SetPage() {
             <Icon name="chevron-back" size={28} color="#333" />
           </TouchableOpacity>
           <View style={{ flex: 1 }} />
-          <TouchableOpacity onPress={() => SheetManager.show('set-menu')} style={styles.menuButton}>
+          <TouchableOpacity onPress={() => setShowMenuModal(true)} style={styles.menuButton}>
             <Icon name="ellipsis-horizontal" size={30} color="#333" />
           </TouchableOpacity>
         </View>
@@ -453,7 +457,7 @@ export default function SetPage() {
         await AsyncStorage.removeItem(shuffledOrderKey);
         await AsyncStorage.removeItem(starredOrderKey);
         await AsyncStorage.removeItem(starredPositionKey);
-        router.back();
+        console.log('Navigate back after delete');
       })();
     }
   };
@@ -567,7 +571,7 @@ export default function SetPage() {
           <Icon name="chevron-back" size={28} color="#333" />
         </TouchableOpacity>
         <View style={{ flex: 1 }} />
-        <TouchableOpacity onPress={() => SheetManager.show('set-menu')} style={styles.menuButton}>
+        <TouchableOpacity onPress={() => setShowMenuModal(true)} style={styles.menuButton}>
           <Icon name="ellipsis-horizontal" size={30} color="#333" />
         </TouchableOpacity>
       </View>
@@ -581,34 +585,38 @@ export default function SetPage() {
           <Button title="Show All" onPress={() => setStarredOnly(false)} color="#007aff" />
         </View>
       )}
-      <ActionSheet id="set-menu" gestureEnabled>
-        <View style={{ paddingVertical: 12 }}>
-          <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', padding: 16 }} onPress={() => { SheetManager.hide('set-menu'); setTimeout(() => handleMenu('edit'), 300); }}>
-            <Ionicons name="create-outline" size={24} color="#444" style={{ marginRight: 16 }} />
-            <Text style={{ fontSize: 18 }}>Edit set name</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', padding: 16 }} onPress={() => { SheetManager.hide('set-menu'); setTimeout(() => handleMenu('import'), 300); }}>
-            <Ionicons name="cloud-upload-outline" size={24} color="#444" style={{ marginRight: 16 }} />
-            <Text style={{ fontSize: 18 }}>Import CSV</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', padding: 16 }} onPress={() => { SheetManager.hide('set-menu'); handleMenu('starred'); }}>
-            <Ionicons name="star" size={24} color="#444" style={{ marginRight: 16 }} />
-            <Text style={{ fontSize: 18 }}>View starred</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', padding: 16 }} onPress={() => { SheetManager.hide('set-menu'); handleMenu('reset'); }}>
-            <Ionicons name="refresh" size={24} color="#444" style={{ marginRight: 16 }} />
-            <Text style={{ fontSize: 18 }}>Reset stats</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', padding: 16 }} onPress={() => { SheetManager.hide('set-menu'); handleMenu('delete'); }}>
-            <Ionicons name="trash" size={24} color="#d00" style={{ marginRight: 16 }} />
-            <Text style={{ fontSize: 18, color: '#d00' }}>Delete set</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', padding: 16, justifyContent: 'center' }} onPress={() => SheetManager.hide('set-menu')}>
-            <Ionicons name="close" size={24} color="#444" style={{ marginRight: 16 }} />
-            <Text style={{ fontSize: 18, color: '#888' }}>Cancel</Text>
-          </TouchableOpacity>
+      {/* Menu Modal */}
+      <Modal visible={showMenuModal} transparent animationType="slide">
+        <View style={styles.importModalBg}>
+          <View style={styles.importModalContent}>
+            <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 12 }}>Set Options</Text>
+            <TouchableOpacity onPress={() => { setShowMenuModal(false); setTimeout(() => handleMenu('edit'), 300); }} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: '#eee' }}>
+              <Icon name="create-outline" size={24} color="#444" style={{ marginRight: 16 }} />
+              <Text style={{ fontSize: 16, color: '#444' }}>Edit Set</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => { setShowMenuModal(false); setTimeout(() => handleMenu('import'), 300); }} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: '#eee' }}>
+              <Icon name="cloud-upload-outline" size={24} color="#444" style={{ marginRight: 16 }} />
+              <Text style={{ fontSize: 16, color: '#444' }}>Import CSV</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => { setShowMenuModal(false); handleMenu('starred'); }} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: '#eee' }}>
+              <Icon name="star" size={24} color="#444" style={{ marginRight: 16 }} />
+              <Text style={{ fontSize: 16, color: '#444' }}>Starred Items</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => { setShowMenuModal(false); handleMenu('reset'); }} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: '#eee' }}>
+              <Icon name="refresh" size={24} color="#444" style={{ marginRight: 16 }} />
+              <Text style={{ fontSize: 16, color: '#444' }}>Reset Progress</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => { setShowMenuModal(false); handleMenu('delete'); }} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: '#eee' }}>
+              <Icon name="trash" size={24} color="#d00" style={{ marginRight: 16 }} />
+              <Text style={{ fontSize: 16, color: '#d00' }}>Delete Set</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowMenuModal(false)} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16, marginTop: 10 }}>
+              <Icon name="close" size={24} color="#444" style={{ marginRight: 16 }} />
+              <Text style={{ fontSize: 16, color: '#444' }}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </ActionSheet>
+      </Modal>
       {/* Edit set name modal (always rendered) */}
       <Modal visible={editModalVisible} transparent animationType="slide">
         <View style={styles.importModalBg}>
@@ -647,7 +655,7 @@ export default function SetPage() {
             <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 12 }}>
               <Text>File has header row</Text>
               <TouchableOpacity onPress={() => setImportHasHeader(h => !h)} style={{ marginLeft: 8 }}>
-                <Ionicons name={importHasHeader ? 'checkbox' : 'square-outline'} size={24} color="#007aff" />
+                <Icon name={importHasHeader ? 'checkbox' : 'square-outline'} size={24} color="#007aff" />
               </TouchableOpacity>
             </View>
             
@@ -683,23 +691,26 @@ export default function SetPage() {
           <View style={styles.card}>
             {/* Audio icon: top left */}
             <TouchableOpacity onPress={pronounce} style={{ position: 'absolute', top: 12, left: 16, zIndex: 2, padding: 4 }}>
-              <Ionicons name="volume-high" size={28} color="#007aff" />
+              <Icon name="volume-high" size={28} color="#007aff" />
             </TouchableOpacity>
             {/* Star icon: top right */}
             <TouchableOpacity onPress={toggleBookmark} style={{ position: 'absolute', top: 12, right: 16, zIndex: 2, padding: 4 }}>
-              <Ionicons 
+              <Icon 
                 name={starredOnly ? "star" : (bookmarks.includes(currentIdx) ? "star" : "star-outline")} 
                 size={28} 
-                color={starredOnly ? '#FFD700' : (bookmarks.includes(currentIdx) ? '#FFD700' : '#bbb')} 
+                color={bookmarks.includes(currentIdx) ? "#FFD700" : "#007aff"} 
               />
             </TouchableOpacity>
             {/* Card content with tap to flip */}
             <TouchableOpacity 
-              style={{ flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%' }} 
+              style={{ flex: 1, width: '100%', minHeight: 200 }} 
               onPress={() => setFlipped(f => !f)} 
               activeOpacity={0.9}
             >
-              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+              <ScrollView 
+                contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 20 }}
+                showsVerticalScrollIndicator={false}
+              >
                 {!flipped ? (
                   <Text style={styles.word}>{current.word}</Text>
                 ) : (
@@ -710,7 +721,7 @@ export default function SetPage() {
                     )}
                   </>
                 )}
-              </View>
+              </ScrollView>
             </TouchableOpacity>
           </View>
         </PanGestureHandler>
@@ -744,7 +755,10 @@ export default function SetPage() {
       </View>
       
       {/* Bottom Navigation */}
-      <FooterNav />
+      <FooterNav 
+        showHome={true}
+        showBack={true}
+      />
     </SafeAreaView>
   );
 } 

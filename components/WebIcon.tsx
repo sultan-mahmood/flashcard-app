@@ -18,6 +18,7 @@ const iconMap: { [key: string]: string } = {
   'create-outline': '✏️',
   'cloud-upload-outline': '☁️',
   'star': '⭐',
+  'star-outline': '☆',
   'refresh': '🔄',
   'trash': '🗑️',
   'close': '✕',

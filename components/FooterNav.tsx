@@ -18,7 +18,7 @@ export default function FooterNav({ showHome = true, showBack = false, onBackPre
   const colorScheme = useColorScheme();
 
   const handleGoHome = () => {
-    router.back();
+    router.push('/');
   };
 
   const handleBack = () => {

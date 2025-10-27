@@ -128,7 +128,7 @@ export default function SetListPage() {
   }, [id]);
 
   const handleStartStudy = () => {
-    router.push({ pathname: '/set/flashcard', params: { id: id as string } });
+    router.push(`/set/flashcard?id=${id}`);
   };
 
 
@@ -198,7 +198,10 @@ export default function SetListPage() {
       </View>
 
       {/* Bottom Navigation */}
-      <FooterNav />
+      <FooterNav 
+        showHome={true}
+        showBack={true}
+      />
     </SafeAreaView>
   );
 } 
